@@ -238,7 +238,6 @@ private:
   size_t preroll_count_{0}; // valid frames in the ring
   void flush_preroll();
   void encode_and_send(const int16_t *frame);
-  uint32_t mic_warmup_ms_{200}; // mic settle time after (re)acquiring the I2S bus
 
   // Chime playback (bus-aware; uses speaker_sink_ via manage_i2s_bus)
   static constexpr float CHIME_VOLUME_SCALE = 0.25f; // reduce level to avoid clipping
@@ -252,6 +251,7 @@ private:
   BusOwner bus_owner_{BusOwner::NONE};
   bool bus_releasing_{false};
   uint32_t mic_warmup_until_ms_{0}; // Delay before first mic start (fixes toggle-to-start)
+  uint32_t mic_warmup_ms_{200};     // mic settle time after (re)acquiring the I2S bus (mic_warmup option)
 
   uint8_t opus_payload_buf_[OpusAudioEncoder::MAX_PAYLOAD_BYTES];
   microphone::Microphone *microphone_{nullptr};
