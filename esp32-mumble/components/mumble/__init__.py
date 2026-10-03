@@ -1,0 +1,411 @@
+"""ESPHome Mumble client component for ESP32-S3.
+
+Configuration: server, port, username, password, channel, mode, crypto (inline).
+Optional HA-editable entities: server_text_id, port_text_id, username_text_id,
+password_text_id, channel_text_id, mode_select_id, crypto_select_id (values persisted to NVS).
+Optional hardware: ptt_pin (press-and-hold PTT), mute_pin.
+"""
+
+import esphome.codegen as cg
+import esphome.config_validation as cv
+from esphome import automation, pins
+from esphome.automation import maybe_simple_id
+from esphome.components import microphone, select, speaker, text
+from esphome.const import CONF_CHANNEL, CONF_ID, CONF_PASSWORD, CONF_PORT, CONF_TRIGGER_ID
+from esphome.core import CORE
+
+CODEOWNERS = ["@danielhoward314"]
+DEPENDENCIES = ["network"]
+AUTO_LOAD = []
+
+CONF_SERVER = "server"
+CONF_USERNAME = "username"
+CONF_MODE = "mode"
+CONF_PTT_PIN = "ptt_pin"
+CONF_MUTE_PIN = "mute_pin"
+CONF_CRYPTO = "crypto"
+CONF_CA_CERT = "ca_cert"
+CONF_SERVER_TEXT = "server_text_id"
+CONF_PORT_TEXT = "port_text_id"
+CONF_USERNAME_TEXT = "username_text_id"
+CONF_PASSWORD_TEXT = "password_text_id"
+CONF_CHANNEL_TEXT = "channel_text_id"
+CONF_MODE_SELECT = "mode_select_id"
+CONF_CRYPTO_SELECT = "crypto_select_id"
+CONF_MICROPHONE = "microphone_id"
+CONF_SPEAKER = "speaker_id"
+CONF_ON_COMMUNICATOR_END = "on_communicator_end"
+CONF_ON_TEXT_MESSAGE = "on_text_message"
+CONF_MESSAGE = "message"
+CONF_CHANNEL_ID = "channel_id"
+CONF_BOT_MODE = "bot_mode"
+CONF_SESSION_ID = "session_id"
+CONF_REASON = "reason"
+CONF_MUTE = "mute"
+CONF_DEAF = "deaf"
+
+CONF_ALWAYS_ON = "always_on"
+CONF_PUSH_TO_TALK = "push_to_talk"
+CONF_COMMUNICATOR = "communicator"
+CONF_LITE = "lite"
+CONF_LEGACY = "legacy"
+
+mumble_ns = cg.esphome_ns.namespace("mumble")
+MumbleComponent = mumble_ns.class_("MumbleComponent", cg.Component)
+MumbleChannelSelect = mumble_ns.class_("MumbleChannelSelect", select.Select, cg.Component)
+
+MUMBLE_MODE = {
+    CONF_ALWAYS_ON: 0,
+    CONF_PUSH_TO_TALK: 1,
+    CONF_COMMUNICATOR: 2,
+}
+
+MUMBLE_CRYPTO = {
+    CONF_LITE: 0,
+    CONF_LEGACY: 1,
+}
+
+
+def _validate_connection_config(config):
+    has_server = (config.get(CONF_SERVER, "") or "").strip() or CONF_SERVER_TEXT in config
+    has_username = (config.get(CONF_USERNAME, "") or "").strip() or CONF_USERNAME_TEXT in config
+    if not has_server:
+        raise cv.Invalid("At least one of 'server' or 'server_text_id' is required")
+    if not has_username:
+        raise cv.Invalid("At least one of 'username' or 'username_text_id' is required")
+    return config
+
+
+CONF_CHANNEL_SELECT_ID = "channel_select_id"
+CONF_CHANNEL_SELECT = "channel_select"
+
+CHANNEL_SELECT_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(CONF_CHANNEL_SELECT_ID): cv.declare_id(MumbleChannelSelect),
+        cv.Optional("name", default="5. Channel"): cv.string,
+        cv.Optional("icon", default="mdi:forum"): cv.icon,
+    }
+)
+
+CONFIG_SCHEMA = cv.All(
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(MumbleComponent),
+            cv.Optional(CONF_CHANNEL_SELECT): CHANNEL_SELECT_SCHEMA,
+            cv.Optional(CONF_SERVER, default=""): cv.string,
+            cv.Optional(CONF_PORT, default=64738): cv.port,
+            cv.Optional(CONF_USERNAME, default=""): cv.string,
+            cv.Optional(CONF_PASSWORD, default=""): cv.string,
+            cv.Optional(CONF_CHANNEL, default="Root"): cv.string,
+            cv.Optional(CONF_SERVER_TEXT): cv.use_id(text.Text),
+            cv.Optional(CONF_PORT_TEXT): cv.use_id(text.Text),
+            cv.Optional(CONF_USERNAME_TEXT): cv.use_id(text.Text),
+            cv.Optional(CONF_PASSWORD_TEXT): cv.use_id(text.Text),
+            cv.Optional(CONF_CHANNEL_TEXT): cv.use_id(text.Text),
+            cv.Optional(CONF_MODE_SELECT): cv.use_id(select.Select),
+            cv.Optional(CONF_CRYPTO_SELECT): cv.use_id(select.Select),
+            cv.Optional(CONF_MICROPHONE): cv.use_id(microphone.Microphone),
+            cv.Optional(CONF_SPEAKER): cv.use_id(speaker.Speaker),
+            cv.Optional(CONF_MODE, default=CONF_ALWAYS_ON): cv.enum(MUMBLE_MODE, lower=True),
+            cv.Optional(CONF_PTT_PIN): pins.gpio_input_pin_schema,
+            cv.Optional(CONF_MUTE_PIN): pins.gpio_input_pin_schema,
+            cv.Optional(CONF_CRYPTO, default=CONF_LEGACY): cv.enum(MUMBLE_CRYPTO, lower=True),
+            cv.Optional(CONF_CA_CERT, default=""): cv.string,
+            cv.Optional(CONF_BOT_MODE, default=False): cv.boolean,
+            cv.Optional(CONF_ON_COMMUNICATOR_END): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(
+                        mumble_ns.class_("MumbleCommunicatorEndTrigger", automation.Trigger.template())
+                    ),
+                }
+            ),
+            cv.Optional(CONF_ON_TEXT_MESSAGE): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(
+                        mumble_ns.class_("MumbleTextMessageTrigger", automation.Trigger.template())
+                    ),
+                }
+            ),
+        }
+    ).extend(cv.COMPONENT_SCHEMA),
+    _validate_connection_config,
+)
+
+
+async def to_code(config):
+    if CORE.is_esp32 and CORE.using_arduino:
+        cg.add_library("WiFi", None)
+        cg.add_library("NetworkClientSecure", None)
+    if CORE.is_esp32:
+        import os
+
+        lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "lib", "micro-opus"))
+        cg.add_library("micro-opus", None, "symlink://" + lib_path)
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
+
+    cg.add(var.set_server(config[CONF_SERVER]))
+    cg.add(var.set_port(config[CONF_PORT]))
+    cg.add(var.set_username(config[CONF_USERNAME]))
+    cg.add(var.set_password(config[CONF_PASSWORD]))
+    cg.add(var.set_channel(config[CONF_CHANNEL]))
+    cg.add(var.set_mode(MUMBLE_MODE[config[CONF_MODE]]))
+    cg.add(var.set_crypto(MUMBLE_CRYPTO[config[CONF_CRYPTO]]))
+    cg.add(var.set_ca_cert(config.get(CONF_CA_CERT, "")))
+    cg.add(var.set_bot_mode(config.get(CONF_BOT_MODE, False)))
+
+    if CONF_SERVER_TEXT in config:
+        server_text = await cg.get_variable(config[CONF_SERVER_TEXT])
+        cg.add(var.set_server_text(server_text))
+    if CONF_PORT_TEXT in config:
+        port_text = await cg.get_variable(config[CONF_PORT_TEXT])
+        cg.add(var.set_port_text(port_text))
+    if CONF_USERNAME_TEXT in config:
+        username_text = await cg.get_variable(config[CONF_USERNAME_TEXT])
+        cg.add(var.set_username_text(username_text))
+    if CONF_PASSWORD_TEXT in config:
+        password_text = await cg.get_variable(config[CONF_PASSWORD_TEXT])
+        cg.add(var.set_password_text(password_text))
+    if CONF_CHANNEL_TEXT in config:
+        channel_text = await cg.get_variable(config[CONF_CHANNEL_TEXT])
+        cg.add(var.set_channel_text(channel_text))
+
+    if CONF_CHANNEL_SELECT in config:
+        chan_conf = config[CONF_CHANNEL_SELECT]
+        chan_sel = cg.new_Pvariable(chan_conf[CONF_CHANNEL_SELECT_ID])
+        await cg.register_component(chan_sel, config)
+        cg.add(cg.App.register_select(chan_sel))
+        cg.add(chan_sel.set_parent(var))
+        cg.add(chan_sel.set_name(chan_conf.get("name", "5. Channel")))
+        cg.add(chan_sel.set_entity_category(cg.EntityCategory.ENTITY_CATEGORY_CONFIG))
+        cg.add(chan_sel.set_icon(chan_conf.get("icon", "mdi:chat")))
+        cg.add(var.set_channel_select(chan_sel))
+    if CONF_MODE_SELECT in config:
+        mode_select = await cg.get_variable(config[CONF_MODE_SELECT])
+        cg.add(var.set_mode_select(mode_select))
+    if CONF_CRYPTO_SELECT in config:
+        crypto_select = await cg.get_variable(config[CONF_CRYPTO_SELECT])
+        cg.add(var.set_crypto_select(crypto_select))
+    if CONF_MICROPHONE in config:
+        mic_var = await cg.get_variable(config[CONF_MICROPHONE])
+        cg.add(var.set_microphone(mic_var))
+    if CONF_SPEAKER in config:
+        speaker_var = await cg.get_variable(config[CONF_SPEAKER])
+        cg.add(var.set_speaker(speaker_var))
+
+    if CONF_PTT_PIN in config:
+        pin = await cg.gpio_pin_expression(config[CONF_PTT_PIN])
+        cg.add(var.set_ptt_pin(pin))
+    if CONF_MUTE_PIN in config:
+        pin = await cg.gpio_pin_expression(config[CONF_MUTE_PIN])
+        cg.add(var.set_mute_pin(pin))
+
+    for conf in config.get(CONF_ON_COMMUNICATOR_END, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(trigger, [], conf)
+    for conf in config.get(CONF_ON_TEXT_MESSAGE, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(trigger, [], conf)
+
+
+MUMBLE_ACTION_SCHEMA = maybe_simple_id(
+    {
+        cv.Required(CONF_ID): cv.use_id(MumbleComponent),
+    }
+)
+
+MumbleMicrophoneEnableAction = mumble_ns.class_("MumbleMicrophoneEnableAction", automation.Action)
+MumbleMicrophoneDisableAction = mumble_ns.class_("MumbleMicrophoneDisableAction", automation.Action)
+MumblePttPressAction = mumble_ns.class_("MumblePttPressAction", automation.Action)
+MumbleResetConfigAction = mumble_ns.class_("MumbleResetConfigAction", automation.Action)
+MumbleStartCommunicatorTransmitAction = mumble_ns.class_("MumbleStartCommunicatorTransmitAction", automation.Action)
+MumbleCommunicatorCancelAction = mumble_ns.class_("MumbleCommunicatorCancelAction", automation.Action)
+
+
+@automation.register_action(
+    "mumble.microphone_enable",
+    MumbleMicrophoneEnableAction,
+    MUMBLE_ACTION_SCHEMA,
+    synchronous=True,
+)
+async def mumble_microphone_enable_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, var)
+
+
+@automation.register_action(
+    "mumble.microphone_disable",
+    MumbleMicrophoneDisableAction,
+    MUMBLE_ACTION_SCHEMA,
+    synchronous=True,
+)
+async def mumble_microphone_disable_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, var)
+
+
+@automation.register_action(
+    "mumble.ptt_press",
+    MumblePttPressAction,
+    MUMBLE_ACTION_SCHEMA,
+    synchronous=True,
+)
+async def mumble_ptt_press_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, var)
+
+
+@automation.register_action(
+    "mumble.reset_config",
+    MumbleResetConfigAction,
+    MUMBLE_ACTION_SCHEMA,
+    synchronous=True,
+)
+async def mumble_reset_config_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, var)
+
+
+@automation.register_action(
+    "mumble.start_communicator_transmit",
+    MumbleStartCommunicatorTransmitAction,
+    MUMBLE_ACTION_SCHEMA,
+    synchronous=True,
+)
+async def mumble_start_communicator_transmit_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, var)
+
+
+@automation.register_action(
+    "mumble.communicator_cancel",
+    MumbleCommunicatorCancelAction,
+    MUMBLE_ACTION_SCHEMA,
+    synchronous=True,
+)
+async def mumble_communicator_cancel_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, var)
+
+
+MumblePlayCommunicatorChimeThenTransmitAction = mumble_ns.class_(
+    "MumblePlayCommunicatorChimeThenTransmitAction", automation.Action
+)
+
+
+@automation.register_action(
+    "mumble.play_communicator_chime_then_transmit",
+    MumblePlayCommunicatorChimeThenTransmitAction,
+    MUMBLE_ACTION_SCHEMA,
+    synchronous=False,
+)
+async def mumble_play_communicator_chime_then_transmit_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, var)
+
+
+MumbleCommunicatorToggleAction = mumble_ns.class_("MumbleCommunicatorToggleAction", automation.Action)
+
+
+@automation.register_action(
+    "mumble.communicator_toggle",
+    MumbleCommunicatorToggleAction,
+    MUMBLE_ACTION_SCHEMA,
+    synchronous=True,
+)
+async def mumble_communicator_toggle_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, var)
+
+
+MUMBLE_SEND_TEXT_MESSAGE_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_ID): cv.use_id(MumbleComponent),
+        cv.Required(CONF_MESSAGE): cv.string,
+        cv.Optional(CONF_CHANNEL_ID, default=0): cv.positive_int,
+    }
+)
+
+MumbleSendTextMessageAction = mumble_ns.class_("MumbleSendTextMessageAction", automation.Action)
+
+
+@automation.register_action(
+    "mumble.send_text_message",
+    MumbleSendTextMessageAction,
+    MUMBLE_SEND_TEXT_MESSAGE_SCHEMA,
+    synchronous=True,
+)
+async def mumble_send_text_message_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    action = cg.new_Pvariable(action_id, template_arg, var)
+    cg.add(action.set_message(config[CONF_MESSAGE]))
+    cg.add(action.set_channel_id(config.get(CONF_CHANNEL_ID, 0)))
+    return action
+
+
+MumbleSelfMuteAction = mumble_ns.class_("MumbleSelfMuteAction", automation.Action)
+MUMBLE_SELF_MUTE_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_ID): cv.use_id(MumbleComponent),
+        cv.Required(CONF_MUTE): cv.boolean,
+    }
+)
+
+
+@automation.register_action(
+    "mumble.self_mute",
+    MumbleSelfMuteAction,
+    MUMBLE_SELF_MUTE_SCHEMA,
+    synchronous=True,
+)
+async def mumble_self_mute_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    action = cg.new_Pvariable(action_id, template_arg, var)
+    cg.add(action.set_mute(config[CONF_MUTE]))
+    return action
+
+
+MumbleSelfDeafAction = mumble_ns.class_("MumbleSelfDeafAction", automation.Action)
+MUMBLE_SELF_DEAF_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_ID): cv.use_id(MumbleComponent),
+        cv.Required(CONF_DEAF): cv.boolean,
+    }
+)
+
+
+@automation.register_action(
+    "mumble.self_deaf",
+    MumbleSelfDeafAction,
+    MUMBLE_SELF_DEAF_SCHEMA,
+    synchronous=True,
+)
+async def mumble_self_deaf_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    action = cg.new_Pvariable(action_id, template_arg, var)
+    cg.add(action.set_deaf(config[CONF_DEAF]))
+    return action
+
+
+MumbleKickUserAction = mumble_ns.class_("MumbleKickUserAction", automation.Action)
+MUMBLE_KICK_USER_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_ID): cv.use_id(MumbleComponent),
+        cv.Required(CONF_SESSION_ID): cv.positive_int,
+        cv.Optional(CONF_REASON, default=""): cv.string,
+    }
+)
+
+
+@automation.register_action(
+    "mumble.kick_user",
+    MumbleKickUserAction,
+    MUMBLE_KICK_USER_SCHEMA,
+    synchronous=True,
+)
+async def mumble_kick_user_to_code(config, action_id, template_arg, args):
+    var = await cg.get_variable(config[CONF_ID])
+    action = cg.new_Pvariable(action_id, template_arg, var)
+    cg.add(action.set_session_id(config[CONF_SESSION_ID]))
+    cg.add(action.set_reason(config.get(CONF_REASON, "")))
+    return action

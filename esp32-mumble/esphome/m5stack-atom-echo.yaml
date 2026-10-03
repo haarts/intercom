@@ -1,0 +1,317 @@
+---
+# M5Stack Atom Echo board config for Mumble client
+# Keep functionally in sync with esp32-s3-box.yaml (same entities/features; only pins/hardware differ).
+# Pinout from wake-word-voice-assistants m5stack-atom-echo: I2S LRCLK 33, BCLK 19, DOUT 22, button 39.
+# Configure server, port, username, password, channel, and mode in Home Assistant UI (values persist in NVS)
+
+substitutions:
+  name: esp32-mumble-atom-echo
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: true
+  min_version: "2026.7.0"
+  project:
+    name: dchote.esp32-mumble
+    version: "dev"  # rewritten to the git tag by release.yml
+  on_boot:
+    priority: -100
+    then:
+      - speaker.volume_set:
+          id: echo_speaker
+          volume: !lambda |-
+            float vol = id(mumble_speaker_volume).state;
+            if (isnan(vol)) vol = 65;
+            return vol / 100.0f;
+  platformio_options:
+    build_flags:
+      - -Wno-cpp
+      - -Wno-stringop-overread
+
+esp32:
+  board: m5stack-atom
+  cpu_frequency: 240MHz
+  # PlatformIO toolchain required for local symlink:// micro-opus.
+  toolchain: platformio
+  framework:
+    type: arduino
+    sdkconfig_options:
+      CONFIG_ESP_TLS_INSECURE: "y"
+      CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY: "y"
+
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+
+logger:
+
+api:
+  # Optional: encryption: { key: !secret api_encryption_key }
+  on_client_connected:
+    - lambda: |-
+        if (id(mumble_server_host).state.empty()) {
+          ESP_LOGI("mumble", "Server not configured; using Home Assistant IP: %s", client_address.c_str());
+          id(mumble_server_host).make_call().set_value(client_address).perform();
+        }
+
+# Managed OTA from GitHub Pages manifests (see docs/features/0015-ota-releases.md).
+# verify_ssl false matches the project's trusted-LAN TLS posture.
+http_request:
+  verify_ssl: false
+
+ota:
+  - platform: esphome
+    # Optional: password: !secret ota_password
+  - platform: http_request
+
+update:
+  - platform: http_request
+    name: "Firmware Update"
+    id: firmware_update
+    update_interval: 6h
+    source: https://dchote.github.io/esp32-mumble/m5stack-atom-echo/manifest.json
+
+# M5Stack Atom Echo: one button (GPIO39). In communicator mode: toggle communicator. Else: PTT (press=on, release=off).
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO39
+      inverted: true
+    name: "Microphone"
+    id: button_microphone
+    on_press:
+      - if:
+          condition:
+            - binary_sensor.is_on: mumble_connected_sensor
+          then:
+            - if:
+                condition:
+                  - lambda: 'return id(mumble_client).get_mode() == 2;'
+                then:
+                  - mumble.communicator_toggle: mumble_client
+                else:
+                  - mumble.microphone_enable: mumble_client
+    on_release:
+      - if:
+          condition:
+            - lambda: 'return id(mumble_client).get_mode() != 2;'
+          then:
+            - mumble.microphone_disable: mumble_client
+  - platform: template
+    name: "Voice Received"
+    id: mumble_voice_active
+    icon: "mdi:microphone-message"
+    device_class: running
+    lambda: |-
+      return id(mumble_client).get_voice_active();
+  - platform: template
+    name: "Voice Sending"
+    id: mumble_voice_sending
+    icon: "mdi:microphone"
+    device_class: running
+    lambda: |-
+      return id(mumble_client).get_voice_sending();
+  - platform: template
+    name: "Mumble Connected"
+    id: mumble_connected_sensor
+    icon: "mdi:connection"
+    entity_category: diagnostic
+    device_class: connectivity
+    lambda: |-
+      return id(mumble_client).is_connected();
+
+# Atom Echo I2S: LRCLK 33, BCLK 19 (no MCLK in reference). Speaker DOUT 22.
+i2s_audio:
+  - id: i2s_audio_bus
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO19
+
+microphone:
+  - platform: i2s_audio
+    id: echo_microphone
+    i2s_din_pin: GPIO23
+    adc_type: external
+    pdm: true
+    sample_rate: 16000
+    correct_dc_offset: true
+
+speaker:
+  - platform: i2s_audio
+    id: echo_speaker
+    i2s_dout_pin: GPIO22
+    dac_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+    buffer_duration: 500ms
+
+# Mumble connection and mode settings (Configuration section; persisted to NVS)
+# Entity names use numeric prefixes for display order: server, port, username, password, channel, mode
+# Port is text (not number) so it displays as integer in HA, per home-assistant-voice-pe pattern
+text:
+  - platform: template
+    id: mumble_server_host
+    name: "1. Server"
+    icon: "mdi:server-network"
+    entity_category: config
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: ""
+    max_length: 253
+  - platform: template
+    id: mumble_server_port
+    name: "2. Port"
+    icon: "mdi:ethernet"
+    entity_category: config
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: "64738"
+    max_length: 5
+  - platform: template
+    id: mumble_username
+    name: "3. Username"
+    icon: "mdi:account"
+    entity_category: config
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: ""  # Seeded with esp32-<MAC> at setup; user can overwrite
+    max_length: 128
+  - platform: template
+    id: mumble_password
+    name: "4. Password"
+    icon: "mdi:key"
+    entity_category: config
+    mode: password
+    optimistic: true
+    restore_value: true
+    initial_value: ""  # Component publishes empty default at setup (avoids HA "unknown")
+    max_length: 128
+  - platform: template
+    id: mumble_channel
+    name: "5. Channel"
+    icon: "mdi:forum"
+    entity_category: config
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: "Root"  # Default channel; case-insensitive match
+    max_length: 128
+select:
+  - platform: template
+    id: mumble_mode
+    name: "6. Mode"
+    icon: "mdi:microphone-settings"
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_option: "always_on"
+    options:
+      - "always_on"
+      - "push_to_talk"
+      - "communicator"
+  - platform: template
+    id: mumble_crypto
+    name: "7. Crypto"
+    icon: "mdi:lock"
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_option: "legacy"
+    options:
+      - "legacy"
+      - "lite"
+
+# Diagnostics section (HA device page)
+button:
+  - platform: template
+    name: "Reset Config"
+    id: mumble_reset_config
+    icon: "mdi:restore"
+    entity_category: diagnostic
+    on_press:
+      - mumble.reset_config: mumble_client
+      - number.set:
+          id: mumble_speaker_volume
+          value: 65
+  - platform: restart
+    name: "Reboot"
+    id: mumble_reboot
+    icon: "mdi:restart"
+    entity_category: diagnostic
+text_sensor:
+  - platform: template
+    name: "Transport"
+    id: mumble_transport
+    icon: "mdi:protocol"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(mumble_client).get_voice_transport_udp()) {
+        return {"UDP"};
+      } else {
+        return {"TCP"};
+      }
+    update_interval: 5s
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    icon: "mdi:wifi"
+    entity_category: diagnostic
+    update_interval: 60s
+  - platform: template
+    name: "Mumble Ping"
+    id: mumble_ping_sensor
+    icon: "mdi:lan"
+    entity_category: diagnostic
+    unit_of_measurement: "ms"
+    device_class: duration
+    accuracy_decimals: 0
+    lambda: |-
+      return id(mumble_client).get_ping_ms();
+    update_interval: 5s
+
+# Controls: speaker volume and microphone
+number:
+  - platform: template
+    name: "Speaker Volume"
+    id: mumble_speaker_volume
+    icon: "mdi:volume-high"
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 100
+    step: 5
+    initial_value: 65
+    set_action:
+      - speaker.volume_set:
+          id: echo_speaker
+          volume: !lambda 'return x / 100.0;'
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+
+mumble:
+  id: mumble_client
+  server: ""  # Empty by default; auto-filled from HA IP when adopted, or set manually
+  port: 64738
+  username: ""
+  password: ""
+  channel: "Root"
+  server_text_id: mumble_server_host
+  port_text_id: mumble_server_port
+  username_text_id: mumble_username
+  password_text_id: mumble_password
+  channel_text_id: mumble_channel
+  mode_select_id: mumble_mode
+  crypto_select_id: mumble_crypto
+  microphone_id: echo_microphone
+  speaker_id: echo_speaker
+  mode: always_on
+  crypto: legacy
+  # Optional: set ca_cert to a PEM CA string to verify the Mumble server TLS cert (default: insecure, trusted LAN).
