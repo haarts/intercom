@@ -88,7 +88,7 @@ std::string MumbleComponent::get_mac_based_username() const {
 #ifdef USE_WIFI
   const esp_mac_type_t mac_type = ESP_MAC_WIFI_STA;
 #else
-  const esp_mac_type_t mac_type = ESP_MAC_ETH;  // e.g. ESP32-P4: Ethernet only
+  const esp_mac_type_t mac_type = ESP_MAC_ETH; // e.g. ESP32-P4: Ethernet only
 #endif
   if (esp_read_mac(mac, mac_type) != ESP_OK) {
     return "";
@@ -929,8 +929,8 @@ void MumbleComponent::send_voice_packet(const uint8_t *opus_data, size_t opus_le
   static constexpr uint64_t SEQ_PER_PACKET = OpusAudioEncoder::FRAME_SAMPLES / (16000 / 100);
   uint64_t seq = tx_sequence_;
   tx_sequence_ += SEQ_PER_PACKET;
-  size_t n = build_voice_packet(tx_packet_buf_, sizeof(tx_packet_buf_), seq, opus_data, opus_len,
-                                is_terminator, voice_target_id_);
+  size_t n = build_voice_packet(tx_packet_buf_, sizeof(tx_packet_buf_), seq, opus_data, opus_len, is_terminator,
+                                voice_target_id_);
   if (n == 0) {
     ESP_LOGW(TAG, "build_voice_packet returned 0 (opus_len=%u, term=%d)", (unsigned)opus_len, is_terminator);
     return;
