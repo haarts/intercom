@@ -49,8 +49,16 @@ public:
 
   bool is_initialized() const { return encoder_ != nullptr; }
 
+  // Can be changed while running (applied to a live encoder immediately).
+  void set_bitrate(int bps);
+  void set_complexity(int complexity);
+  int get_bitrate() const { return bitrate_; }
+  int get_complexity() const { return complexity_; }
+
 private:
   void *encoder_{nullptr}; // OpusEncoder* (opaque to avoid opus.h in header)
+  int bitrate_{16000};
+  int complexity_{1};
   int sample_rate_{16000};
   int channels_{1};
 };

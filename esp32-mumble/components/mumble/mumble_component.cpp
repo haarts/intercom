@@ -3,8 +3,9 @@
 #include "mumble_channel_select.h"
 #include "mumble_diag.h"
 #include "mumble_socket.h"
+#include "esphome/core/hal.h"
 #include "esphome/core/log.h"
-#ifdef USE_ESP_IDF
+#if defined(USE_ESP_IDF) && defined(USE_WIFI)
 #include "esp_wifi.h"
 #endif
 #include <cmath>
@@ -85,7 +86,12 @@ uint16_t MumbleComponent::get_port() const {
 
 std::string MumbleComponent::get_mac_based_username() const {
   uint8_t mac[6];
-  if (esp_read_mac(mac, ESP_MAC_WIFI_STA) != ESP_OK) {
+#ifdef USE_WIFI
+  const esp_mac_type_t mac_type = ESP_MAC_WIFI_STA;
+#else
+  const esp_mac_type_t mac_type = ESP_MAC_ETH;  // e.g. ESP32-P4: Ethernet only
+#endif
+  if (esp_read_mac(mac, mac_type) != ESP_OK) {
     return "";
   }
   char buf[32];
@@ -379,7 +385,7 @@ void MumbleComponent::log_connection_config() const {
 
 void MumbleComponent::setup() {
   mumble_diag_run_boot();
-#ifdef USE_ESP_IDF
+#if defined(USE_ESP_IDF) && defined(USE_WIFI)
   // Disable WiFi power save to improve UDP transmission. Modem sleep can cause
   // UDP packets to be lost or delayed (ESP-IDF issue tracker). For plugged-in
   // devices this has negligible impact.
@@ -774,7 +780,7 @@ void MumbleComponent::manage_i2s_bus() {
     if (desired == BusOwner::MIC) {
       uint32_t now = mumble_millis();
       if (mic_warmup_until_ms_ == 0) {
-        mic_warmup_until_ms_ = now + 200; // 200ms warmup for I2S/ES7210 (longer after bus re-acquire)
+        mic_warmup_until_ms_ = now + mic_warmup_ms_; // settle time for I2S/codec (configurable: mic_warmup)
       }
       if (now < mic_warmup_until_ms_) {
         return; // Wait for warmup
@@ -919,7 +925,12 @@ int32_t MumbleComponent::frame_rms(const int16_t *pcm, size_t samples) {
 void MumbleComponent::send_voice_packet(const uint8_t *opus_data, size_t opus_len, bool is_terminator) {
   if (opus_len > MumbleUdp::MAX_PACKET_SIZE - 32)
     return; // leave room for header/varints
-  size_t n = build_voice_packet(tx_packet_buf_, sizeof(tx_packet_buf_), tx_sequence_++, opus_data, opus_len,
+  // Mumble's voice sequence counts 10 ms frames, so a 20 ms packet advances it by 2. Clients
+  // (Mumla, desktop Mumble) time their jitter buffer by it; stepping by 1 made them drop audio.
+  static constexpr uint64_t SEQ_PER_PACKET = OpusAudioEncoder::FRAME_SAMPLES / (16000 / 100);
+  uint64_t seq = tx_sequence_;
+  tx_sequence_ += SEQ_PER_PACKET;
+  size_t n = build_voice_packet(tx_packet_buf_, sizeof(tx_packet_buf_), seq, opus_data, opus_len,
                                 is_terminator, voice_target_id_);
   if (n == 0) {
     ESP_LOGW(TAG, "build_voice_packet returned 0 (opus_len=%u, term=%d)", (unsigned)opus_len, is_terminator);
@@ -976,7 +987,9 @@ void MumbleComponent::audio_capture() {
 
   if (tx_state_ == TxState::IDLE) {
     tx_state_ = TxState::CAPTURING;
-    tx_sequence_ = 0;
+    preroll_count_ = 0;
+    // Keep tx_sequence_ running across utterances (like desktop Mumble): restarting at 0
+    // looks like stale packets to the receiver's jitter buffer.
     // Restart ambient calibration each time we begin capturing.
     vad_noise_floor_ = 0.0f;
     vad_calib_frames_ = 0;
@@ -994,7 +1007,8 @@ void MumbleComponent::audio_capture() {
     int32_t rms = frame_rms(frame_buf, OpusAudioEncoder::FRAME_SAMPLES);
 
     // Calibration window: estimate the ambient noise floor before allowing voice detection.
-    if (vad_calib_frames_ < VAD_CALIB_FRAMES) {
+    // Push-to-talk doesn't use VAD, so don't swallow the first word while calibrating.
+    if (get_mode() != 1 && vad_calib_frames_ < VAD_CALIB_FRAMES) {
       if (vad_noise_floor_ <= 0.0f)
         vad_noise_floor_ = static_cast<float>(rms);
       else
@@ -1008,14 +1022,17 @@ void MumbleComponent::audio_capture() {
     int32_t threshold = static_cast<int32_t>(vad_noise_floor_ * VAD_MARGIN_RATIO);
     if (threshold < VAD_MIN_THRESHOLD)
       threshold = VAD_MIN_THRESHOLD;
-    bool above = (rms > threshold);
+    // Push-to-talk: the held button is the voice gate, so send everything (no VAD).
+    bool above = (get_mode() == 1) || (rms > threshold);
 
     // Adapt the noise floor: fast down toward quieter ambient; slow up when the level is in the
     // noise range; a very slow creep under loud input so an erroneously low floor can recover.
     float frms = static_cast<float>(rms);
     if (frms < vad_noise_floor_)
       vad_noise_floor_ += (frms - vad_noise_floor_) * VAD_NOISE_DOWN;
-    else if (!above)
+    else if (!above && tx_state_ == TxState::CAPTURING)
+      // Only learn the ambient level between utterances: quiet syllables mid-sentence
+      // would otherwise drag the floor up and cut TX off.
       vad_noise_floor_ += (frms - vad_noise_floor_) * VAD_NOISE_UP_FAST;
     else
       vad_noise_floor_ += (frms - vad_noise_floor_) * VAD_NOISE_UP_SLOW;
@@ -1028,6 +1045,8 @@ void MumbleComponent::audio_capture() {
           tx_state_ = TxState::TRANSMITTING;
           voice_sending_ = true;
           ESP_LOGI(TAG, "Voice TX started");
+          if (!echo_suppress)
+            flush_preroll();
         }
       } else {
         vad_voice_frames_ = 0;
@@ -1052,13 +1071,39 @@ void MumbleComponent::audio_capture() {
     }
 
     if ((tx_state_ == TxState::TRANSMITTING || tx_state_ == TxState::TAIL) && !echo_suppress) {
-      int enc_len = opus_encoder_.encode(frame_buf, OpusAudioEncoder::FRAME_SAMPLES, opus_payload_buf_,
-                                         OpusAudioEncoder::MAX_PAYLOAD_BYTES);
-      if (enc_len > 0) {
-        send_voice_packet(opus_payload_buf_, static_cast<size_t>(enc_len), false);
-      }
+      encode_and_send(frame_buf);
+    } else if (tx_state_ == TxState::CAPTURING) {
+      memcpy(preroll_buf_[preroll_head_], frame_buf, sizeof(frame_buf));
+      preroll_head_ = (preroll_head_ + 1) % PREROLL_FRAMES;
+      if (preroll_count_ < PREROLL_FRAMES)
+        preroll_count_++;
     }
   }
+}
+
+void MumbleComponent::flush_preroll() {
+  size_t start = (preroll_head_ + PREROLL_FRAMES - preroll_count_) % PREROLL_FRAMES;
+  for (size_t i = 0; i < preroll_count_; i++)
+    encode_and_send(preroll_buf_[(start + i) % PREROLL_FRAMES]);
+  preroll_count_ = 0;
+}
+
+void MumbleComponent::encode_and_send(const int16_t *frame) {
+  uint32_t t = micros();
+  int enc_len = opus_encoder_.encode(frame, OpusAudioEncoder::FRAME_SAMPLES, opus_payload_buf_,
+                                     OpusAudioEncoder::MAX_PAYLOAD_BYTES);
+  uint32_t dt = micros() - t;
+  enc_us_total_ += dt;
+  if (dt > enc_us_max_)
+    enc_us_max_ = dt;
+  if (++enc_frames_ == 500) { // every ~10 s of transmitted audio
+    ESP_LOGD(TAG, "Opus encode: avg %u us, max %u us per 20 ms frame (%d bps, complexity %d)",
+             (unsigned)(enc_us_total_ / enc_frames_), (unsigned)enc_us_max_, opus_encoder_.get_bitrate(),
+             opus_encoder_.get_complexity());
+    enc_us_total_ = enc_us_max_ = enc_frames_ = 0;
+  }
+  if (enc_len > 0)
+    send_voice_packet(opus_payload_buf_, static_cast<size_t>(enc_len), false);
 }
 
 void MumbleComponent::dump_config() {
