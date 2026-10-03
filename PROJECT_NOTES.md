@@ -124,4 +124,7 @@ The two copies in Downloads are identical. The file is 180 × 90 mm, with layers
       Encode time per 20 ms frame: 2.4 / 5.5 / 8.8 ms. Kept 16 kbit/s, complexity 1 pending a listening A/B.
       Settings "Opus Bitrate" / "Opus Complexity" are live-adjustable in HA.
 - [ ] Wire a physical PTT button to GPIO20.
+- [ ] Upstream PR https://github.com/dchote/esp32-mumble/pull/2 (branch `p4-support` on haarts/esp32-mumble,
+      worktree /home/harm/prj/esp32-mumble-pr): P4 support, sequence fix, VAD. `esp32-mumble/` here is a git
+      subtree identical to that branch; after merge, `git subtree pull --prefix=esp32-mumble <upstream> main`.
 - [ ] In HA: remove the old `intercom-p4-bringup` device, adopt `esp32-mumble-p4-e80332` (no API encryption yet).
