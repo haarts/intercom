@@ -102,8 +102,6 @@ public:
   void set_bot_mode(bool bot) { bot_mode_ = bot; }
   /** Voice target id for TX (0 = channel, 1-30 = custom target, 31 = loopback). */
   void set_voice_target_id(uint8_t id) { voice_target_id_ = id; }
-  void set_opus_bitrate(int bps) { opus_encoder_.set_bitrate(bps); }
-  void set_opus_complexity(int complexity) { opus_encoder_.set_complexity(complexity); }
   void set_mic_warmup_ms(uint32_t ms) { mic_warmup_ms_ = ms; }
   uint8_t get_voice_target_id() const { return voice_target_id_; }
   /** Register a voice target with the server (delegates to client). */
@@ -241,10 +239,6 @@ private:
   void flush_preroll();
   void encode_and_send(const int16_t *frame);
   uint32_t mic_warmup_ms_{200}; // mic settle time after (re)acquiring the I2S bus
-  // Encode timing diagnostics (logged periodically)
-  uint32_t enc_us_total_{0};
-  uint32_t enc_us_max_{0};
-  uint32_t enc_frames_{0};
 
   // Chime playback (bus-aware; uses speaker_sink_ via manage_i2s_bus)
   static constexpr float CHIME_VOLUME_SCALE = 0.25f; // reduce level to avoid clipping

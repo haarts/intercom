@@ -62,24 +62,12 @@ bool OpusAudioEncoder::init(int sample_rate, int channels) {
     return false;
   }
   encoder_ = enc;
-  opus_encoder_ctl(static_cast<OpusEncoder *>(encoder_), OPUS_SET_BITRATE(bitrate_));
-  opus_encoder_ctl(static_cast<OpusEncoder *>(encoder_), OPUS_SET_COMPLEXITY(complexity_));
+  opus_encoder_ctl(static_cast<OpusEncoder *>(encoder_), OPUS_SET_BITRATE(16000));
+  opus_encoder_ctl(static_cast<OpusEncoder *>(encoder_), OPUS_SET_COMPLEXITY(1));
   opus_encoder_ctl(static_cast<OpusEncoder *>(encoder_), OPUS_SET_VBR(1));
   opus_encoder_ctl(static_cast<OpusEncoder *>(encoder_), OPUS_SET_DTX(1));
-  ESP_LOGI(TAG, "Opus encoder init %dHz mono, %d bps, complexity %d", sample_rate, bitrate_, complexity_);
+  ESP_LOGI(TAG, "Opus encoder init %dHz mono", sample_rate);
   return true;
-}
-
-void OpusAudioEncoder::set_bitrate(int bps) {
-  bitrate_ = bps;
-  if (encoder_ != nullptr)
-    opus_encoder_ctl(static_cast<OpusEncoder *>(encoder_), OPUS_SET_BITRATE(bps));
-}
-
-void OpusAudioEncoder::set_complexity(int complexity) {
-  complexity_ = complexity;
-  if (encoder_ != nullptr)
-    opus_encoder_ctl(static_cast<OpusEncoder *>(encoder_), OPUS_SET_COMPLEXITY(complexity));
 }
 
 void OpusAudioEncoder::destroy() {

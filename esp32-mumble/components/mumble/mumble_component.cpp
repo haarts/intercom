@@ -3,7 +3,6 @@
 #include "mumble_channel_select.h"
 #include "mumble_diag.h"
 #include "mumble_socket.h"
-#include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 #if defined(USE_ESP_IDF) && defined(USE_WIFI)
 #include "esp_wifi.h"
@@ -1089,19 +1088,8 @@ void MumbleComponent::flush_preroll() {
 }
 
 void MumbleComponent::encode_and_send(const int16_t *frame) {
-  uint32_t t = micros();
   int enc_len = opus_encoder_.encode(frame, OpusAudioEncoder::FRAME_SAMPLES, opus_payload_buf_,
                                      OpusAudioEncoder::MAX_PAYLOAD_BYTES);
-  uint32_t dt = micros() - t;
-  enc_us_total_ += dt;
-  if (dt > enc_us_max_)
-    enc_us_max_ = dt;
-  if (++enc_frames_ == 500) { // every ~10 s of transmitted audio
-    ESP_LOGD(TAG, "Opus encode: avg %u us, max %u us per 20 ms frame (%d bps, complexity %d)",
-             (unsigned)(enc_us_total_ / enc_frames_), (unsigned)enc_us_max_, opus_encoder_.get_bitrate(),
-             opus_encoder_.get_complexity());
-    enc_us_total_ = enc_us_max_ = enc_frames_ = 0;
-  }
   if (enc_len > 0)
     send_voice_packet(opus_payload_buf_, static_cast<size_t>(enc_len), false);
 }
