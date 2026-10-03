@@ -123,7 +123,8 @@ The two copies in Downloads are identical. The file is 180 × 90 mm, with layers
 - [x] Opus sweep (Harvard sentences, PTT): WER 4-7% at 16k/c1, 24k/c5 and 32k/c10 alike (run-to-run noise).
       Encode time per 20 ms frame: 2.4 / 5.5 / 8.8 ms. Kept 16 kbit/s, complexity 1 pending a listening A/B.
       Settings "Opus Bitrate" / "Opus Complexity" are live-adjustable in HA.
-- [ ] Wire a physical PTT button to GPIO20.
+- [x] PTT button on GPIO22 (2026-10-03): button to GND, internal pull-up, active low. TX starts ~60 ms after the press.
+      Never wire a GPIO to VBUS/VSYS (5 V): the P4 pins are 3.3 V only.
 - [ ] Upstream PR https://github.com/dchote/esp32-mumble/pull/2 (branch `p4-support` on haarts/esp32-mumble,
       worktree /home/harm/prj/esp32-mumble-pr): P4 support, sequence fix, VAD. `esp32-mumble/` here is a git
       subtree identical to that branch; after merge, `git subtree pull --prefix=esp32-mumble <upstream> main`.

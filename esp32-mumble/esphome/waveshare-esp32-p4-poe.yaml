@@ -9,7 +9,7 @@
 substitutions:
   name: esp32-mumble-p4
   # PTT button between this header pin and GND. GPIO35 (BOOT) is Ethernet TXD1 on this board.
-  ptt_pin: GPIO20
+  ptt_pin: GPIO22
   # Mumble server; empty = auto-filled with the Home Assistant IP on adoption.
   # Override at build time: esphome -s mumble_server 192.168.1.10 run ...
   mumble_server: ""
