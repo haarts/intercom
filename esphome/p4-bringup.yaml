@@ -1,0 +1,156 @@
+---
+# Bring-up config for the Waveshare ESP32-P4-WIFI6-POE-ETH.
+# Goal: prove Ethernet, the ES8311 speaker + mic path, and a button/LED work
+# before porting esp32-mumble. Powered over USB-C (UART); Ethernet works without PoE.
+#
+# Pins from https://www.waveshare.com/wiki/ESP32-P4-WIFI6-POE-ETH and
+# https://devices.esphome.io/devices/waveshare-esp32-p4-eth/ (same layout as
+# Espressif's P4 function EV board). Codec-side names: ASDOUT = codec -> ESP (mic),
+# DSDIN = ESP -> codec (speaker).
+
+substitutions:
+  name: intercom-p4-bringup
+  # Test button: a pushbutton (or a jumper wire) between this header pin and GND.
+  # The BOOT button can't be used: GPIO35 is Ethernet TXD1 on this board.
+  # GPIO20 should be on the 40-pin header; check the silkscreen and change it if not.
+  # The PTT switch's LED ring gets added once we know its voltage and its pin.
+  button_pin: GPIO20
+
+esphome:
+  name: ${name}
+  min_version: "2026.7.0"
+  on_boot:
+    - priority: -100
+      then:
+        - speaker.volume_set:
+            id: p4_speaker
+            volume: 0.6
+
+esp32:
+  # This board has rev v3.2 (production) silicon, read with:
+  #   esptool --chip esp32p4 --port /dev/ttyACM0 chip-id
+  # Pre-rev3 (v1.x) boards need `engineering_sample: true` instead; the two
+  # builds aren't interchangeable.
+  board: esp32-p4_r3
+  # 400MHz is experimental in ESPHome (esphome/esphome#13425).
+  cpu_frequency: 360MHz
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+
+psram:
+
+logger:
+  # The USB-C port is a CH343 bridge on UART0; ESPHome defaults the P4 to its
+  # native USB-Serial-JTAG, which would leave this port silent.
+  hardware_uart: UART0
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+
+ethernet:
+  type: IP101
+  mdc_pin: GPIO31
+  mdio_pin: GPIO52
+  power_pin: GPIO51
+  clk:
+    mode: CLK_EXT_IN
+    pin: GPIO50
+  phy_addr: 1
+
+i2c:
+  - id: i2c_internal
+    sda: GPIO7
+    scl: GPIO8
+
+i2s_audio:
+  - id: i2s_audio_bus
+    i2s_lrclk_pin: GPIO10
+    i2s_bclk_pin: GPIO12
+    i2s_mclk_pin: GPIO13
+
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: i2c_internal
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    # Leave use_microphone off: in ESPHome's es8311 driver it selects a PDM *digital* mic.
+    # This board has an analog mic, which the driver enables (max PGA) without it.
+    mic_gain: 42DB
+
+microphone:
+  - platform: i2s_audio
+    id: p4_mic
+    i2s_audio_id: i2s_audio_bus
+    i2s_din_pin: GPIO11
+    adc_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+    correct_dc_offset: true
+
+speaker:
+  - platform: i2s_audio
+    id: p4_speaker
+    i2s_audio_id: i2s_audio_bus
+    i2s_dout_pin: GPIO9
+    dac_type: external
+    audio_dac: es8311_dac
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+    buffer_duration: 500ms
+
+# Power amplifier enable for the speaker header.
+switch:
+  - platform: gpio
+    id: speaker_amp
+    name: Speaker Amp
+    pin: GPIO53
+    restore_mode: ALWAYS_ON
+
+rtttl:
+  speaker: p4_speaker
+  id: tone
+
+# Mic test: these levels should jump when you talk or clap near the board.
+sensor:
+  - platform: sound_level
+    microphone: p4_mic
+    passive: false
+    measurement_duration: 500ms
+    peak:
+      name: Mic Peak
+    rms:
+      name: Mic RMS
+
+binary_sensor:
+  - platform: gpio
+    id: ptt_button
+    name: PTT Button
+    pin:
+      number: ${button_pin}
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      - rtttl.play: "beep:d=16,o=6,b=120:c,e,g"
+
+button:
+  - platform: template
+    name: Play Test Tone
+    on_press:
+      - rtttl.play: "scale:d=8,o=5,b=140:c,d,e,f,g,a,b,c6"
+  - platform: restart
+    name: Restart
+
+text_sensor:
+  - platform: ethernet_info
+    ip_address:
+      name: IP Address

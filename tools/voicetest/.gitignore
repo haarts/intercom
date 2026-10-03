@@ -1,0 +1,4 @@
+.venv-*/
+runs/
+# generated from sentences.txt with espeak-ng on meklit (see run.sh)
+harvard-en-pad.wav
