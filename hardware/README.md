@@ -8,7 +8,7 @@ plate. The box sits on the in-wall box the UTP comes out of, with its back again
 |---|---|---|
 | `plate/front-plate-arches.dxf` | Front plate for the laser cutter | Holes corrected (below). Grille pattern still to check with the cutter. |
 | `enclosure/enclosure.py` | Parametric CadQuery model of the 3D-printed prototype: shell and wall plate | First version, not printed yet |
-| `carrier/` | KiCad project for the button/LED carrier board | Not started: needs the Konnect KiCad tools (specification below) |
+| `carrier/` | KiCad project for the button/LED carrier board | Schematic rev A done; ERC clean. PDF and BOM in `carrier/export/`. PCB layout still to do. |
 
 ## GPIO map (header P6, numbering as in Waveshare's schematic)
 
@@ -47,7 +47,7 @@ Pins on the header that are **not** free:
 The carrier is through-hole only, so it can be hand-soldered. It plugs onto the 2×20 header.
 
 **Per button:**
-- **Connector:** a JST-XH 4-pin. Pin 1 = switch, 2 = GND, 3 = LED+ (5 V), 4 = LED−.
+- **Connector:** a JST-XH 4-pin. Pin 1 = LED+ (+5 V), 2 = LED−, 3 = switch, 4 = GND. The power pins are on the outside, and +5 V is not next to GND.
 - **Switch input:** 1 kΩ in series to the GPIO, with 100 nF to GND. The pull-up is the ESP32's own; a pressed button reads low.
 - **LED ring:** switched low-side by a BC547, with a 1 kΩ base resistor and a 10 kΩ base pull-down that keeps it off during boot. A series resistor footprint (R_LED) is fitted with 0 Ω until a ring's current at 5 V has been measured.
 
