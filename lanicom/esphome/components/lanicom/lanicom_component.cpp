@@ -34,10 +34,11 @@ class Lock {
 void LanicomComponent::setup() {
   this->engine_mutex_ = xSemaphoreCreateMutex();
   this->rx_mutex_ = xSemaphoreCreateMutex();
+  this->speaker_mutex_ = xSemaphoreCreateMutex();
   this->events_ = xQueueCreate(16, sizeof(Event));
   RAMAllocator<int16_t> alloc;
   this->capture_ = alloc.allocate(CAPTURE_SAMPLES);
-  if (!this->engine_mutex_ || !this->rx_mutex_ || !this->events_ || !this->capture_) {
+  if (!this->engine_mutex_ || !this->rx_mutex_ || !this->speaker_mutex_ || !this->events_ || !this->capture_) {
     ESP_LOGE(TAG, "Out of memory");
     this->mark_failed();
     return;
@@ -227,11 +228,23 @@ void LanicomComponent::manage_bus_() {
     desired = Bus::SPEAKER;
 
   if (this->bus_ == Bus::SPEAKER && !this->bus_releasing_ && this->speaker_->is_stopped()) {
+    Lock lock(this->speaker_mutex_);
     this->speaker_ready_ = false;
     this->bus_ = Bus::NONE;  // stopped on its own (e.g. its idle timeout)
   }
-  if (this->bus_ == Bus::SPEAKER && !this->speaker_ready_ && this->speaker_->is_running())
+  // Not while releasing: stop() is asynchronous, so the speaker still reads as running for a moment,
+  // and marking it ready again would let the audio task's play() restart it.
+  if (this->bus_ == Bus::SPEAKER && !this->bus_releasing_ && !this->speaker_ready_ && this->speaker_->is_running())
     this->speaker_ready_ = true;
+  if (this->speaker_ != nullptr && this->bus_ != Bus::SPEAKER && !this->speaker_->is_stopped() &&
+      !(this->bus_releasing_ && this->bus_ == Bus::SPEAKER)) {
+    // Shouldn't happen any more, but if the speaker runs while the bus isn't its own, it blocks
+    // the mic: stop it.
+    ESP_LOGW(TAG, "Speaker running while the bus isn't assigned to it; stopping it");
+    Lock lock(this->speaker_mutex_);
+    this->speaker_ready_ = false;
+    this->speaker_->stop();
+  }
 
   bool busy = this->bus_ != desired || this->bus_releasing_ || this->receiving_ ||
               (this->bus_ == Bus::SPEAKER && !this->speaker_ready_);
@@ -254,6 +267,7 @@ void LanicomComponent::manage_bus_() {
       this->mic_ready_ = false;
       this->mic_->stop();
     } else {
+      Lock lock(this->speaker_mutex_);
       this->speaker_ready_ = false;
       this->speaker_->stop();
     }
@@ -602,6 +616,9 @@ void LanicomComponent::audio_run_() {
       primed = false;  // talking (bus owned by the mic) or the speaker is starting: discard
       continue;
     }
+    Lock lock(this->speaker_mutex_);
+    if (!this->speaker_ready_)
+      continue;  // stopped since the check above
     if (!primed) {
       // First write since the speaker started: 10 ms of slack against a late task wakeup.
       static const int16_t silence[PLAYOUT_SAMPLES] = {};

@@ -299,6 +299,7 @@ def main(argv=None) -> None:
     p.add_argument("--bitrate", type=int, default=24000)
 
     args = parser.parse_args(argv)
+    sys.stdout.reconfigure(line_buffering=True)  # events show up promptly when piped or logged
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARNING, format="%(levelname)s %(message)s")
 
     if args.cmd == "keygen":

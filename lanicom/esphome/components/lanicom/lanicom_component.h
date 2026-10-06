@@ -150,6 +150,9 @@ class LanicomComponent : public Component {
   lc_talk_t talk_{};
   SemaphoreHandle_t engine_mutex_{nullptr};
   SemaphoreHandle_t rx_mutex_{nullptr};
+  // Held around "is the speaker ours?" + play(), and around stopping it: ESPHome's play()
+  // restarts a stopped speaker, which would then hold the shared I2S bus forever.
+  SemaphoreHandle_t speaker_mutex_{nullptr};
   QueueHandle_t events_{nullptr};
   TaskHandle_t net_task_handle_{nullptr}, audio_task_handle_{nullptr};
   int sock_{-1};
