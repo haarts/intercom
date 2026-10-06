@@ -128,6 +128,8 @@ The two copies in Downloads are identical. The file is 180 × 90 mm, with layers
       Settings "Opus Bitrate" / "Opus Complexity" are live-adjustable in HA.
 - [x] PTT button on GPIO22 (2026-10-03): button to GND, internal pull-up, active low. TX starts ~60 ms after the press.
       Never wire a GPIO to VBUS/VSYS (5 V): the P4 pins are 3.3 V only.
+      2026-10-06: PTT moved to GPIO23, button 1 on the carrier board (buttons 1-4 = GPIO23/22/21/20 in header order).
+      A breadboard button on GPIO22 must move to GPIO23 with the new firmware.
 - [ ] Upstream PR https://github.com/dchote/esp32-mumble/pull/2 (branch `p4-support` on haarts/esp32-mumble,
       worktree /home/harm/prj/esp32-mumble-pr): P4 support, sequence fix, VAD. `esp32-mumble/` here is a git
       subtree identical to that branch; after merge, `git subtree pull --prefix=esp32-mumble <upstream> main`.

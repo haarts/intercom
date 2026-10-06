@@ -121,7 +121,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Generic connector, single row, 01x20, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -132,7 +132,18 @@
 				)
 			)
 		)
+		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/a1a14de5-07b8-49f5-96a6-64f5030fd15d")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14" "15"
+					"16" "17" "18" "19" "20"
+				)
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 1.33 -1.330001)
@@ -303,6 +314,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_1-Pad1)")
+			(pinfunction "Pin_1_1")
+			(pintype "passive+no_connect")
 			(uuid "7d38de63-8d0f-4173-b9c0-7599cc37b50c")
 		)
 		(pad "2" thru_hole circle
@@ -312,6 +325,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_2-Pad2)")
+			(pinfunction "Pin_2_2")
+			(pintype "passive+no_connect")
 			(uuid "ee8bf6da-63e8-4970-9246-839a39f1959f")
 		)
 		(pad "3" thru_hole circle
@@ -321,6 +336,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_3_3")
+			(pintype "passive")
 			(uuid "17d0a9ce-e48e-4fdd-b1ec-e5621de4c4f4")
 		)
 		(pad "4" thru_hole circle
@@ -330,6 +347,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_4-Pad4)")
+			(pinfunction "Pin_4_4")
+			(pintype "passive+no_connect")
 			(uuid "171e468c-d3c5-4feb-85c4-f9df47044369")
 		)
 		(pad "5" thru_hole circle
@@ -338,7 +357,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED2_GPIO33")
+			(net "/LED4_GPIO33")
+			(pinfunction "Pin_5_5")
+			(pintype "passive")
 			(uuid "2dad217e-6e9b-4945-9222-1fd365b7586d")
 		)
 		(pad "6" thru_hole circle
@@ -347,7 +368,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED1_GPIO32")
+			(net "/LED2_GPIO32")
+			(pinfunction "Pin_6_6")
+			(pintype "passive")
 			(uuid "23af7419-1e90-4013-8e6b-329103d1c6f6")
 		)
 		(pad "7" thru_hole circle
@@ -357,6 +380,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_7-Pad7)")
+			(pinfunction "Pin_7_7")
+			(pintype "passive+no_connect")
 			(uuid "fedb7884-7e72-407c-863b-78e5cbb96060")
 		)
 		(pad "8" thru_hole circle
@@ -366,6 +391,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_8_8")
+			(pintype "passive")
 			(uuid "1ee77f27-f245-4d79-9c75-525c88574ba3")
 		)
 		(pad "9" thru_hole circle
@@ -375,6 +402,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_9-Pad9)")
+			(pinfunction "Pin_9_9")
+			(pintype "passive+no_connect")
 			(uuid "d48ef8d2-508b-438a-b47b-8ae46dd57f70")
 		)
 		(pad "10" thru_hole circle
@@ -384,6 +413,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_10-Pad10)")
+			(pinfunction "Pin_10_10")
+			(pintype "passive+no_connect")
 			(uuid "d054b243-be48-4ffd-8963-daf5e9833e7a")
 		)
 		(pad "11" thru_hole circle
@@ -392,7 +423,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN4_GPIO23")
+			(net "/BTN1_GPIO23")
+			(pinfunction "Pin_11_11")
+			(pintype "passive")
 			(uuid "7fa4df31-5e3b-448a-92e9-f0fda400b4b2")
 		)
 		(pad "12" thru_hole circle
@@ -401,7 +434,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN1_GPIO22")
+			(net "/BTN2_GPIO22")
+			(pinfunction "Pin_12_12")
+			(pintype "passive")
 			(uuid "337f240e-9c53-4590-90aa-37c2dc630f4d")
 		)
 		(pad "13" thru_hole circle
@@ -411,6 +446,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_13_13")
+			(pintype "passive")
 			(uuid "760b8deb-9d38-4a42-9ac8-fc27d1b96f9e")
 		)
 		(pad "14" thru_hole circle
@@ -420,6 +457,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/BTN3_GPIO21")
+			(pinfunction "Pin_14_14")
+			(pintype "passive")
 			(uuid "79159903-5344-4faf-93a3-c55195b732fa")
 		)
 		(pad "15" thru_hole circle
@@ -428,7 +467,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN2_GPIO20")
+			(net "/BTN4_GPIO20")
+			(pinfunction "Pin_15_15")
+			(pintype "passive")
 			(uuid "10c306f6-d21b-4586-8b27-bd50aacb17ea")
 		)
 		(pad "16" thru_hole circle
@@ -438,6 +479,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_16-Pad16)")
+			(pinfunction "Pin_16_16")
+			(pintype "passive+no_connect")
 			(uuid "e1503cb2-5be8-4e31-909f-f31f5799ec69")
 		)
 		(pad "17" thru_hole circle
@@ -447,6 +490,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_17-Pad17)")
+			(pinfunction "Pin_17_17")
+			(pintype "passive+no_connect")
 			(uuid "726f03b0-33c4-4784-818d-2fb6c42350a7")
 		)
 		(pad "18" thru_hole circle
@@ -456,6 +501,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_18_18")
+			(pintype "passive")
 			(uuid "bb04f705-4c57-4adf-9090-c21de6791a9b")
 		)
 		(pad "19" thru_hole circle
@@ -465,6 +512,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "+5V")
+			(pinfunction "Pin_19_19")
+			(pintype "passive")
 			(uuid "1d485263-a009-49e3-b3e0-71fef825a016")
 		)
 		(pad "20" thru_hole circle
@@ -474,6 +523,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J7-Pin_20-Pad20)")
+			(pinfunction "Pin_20_20")
+			(pintype "passive+no_connect")
 			(uuid "1e14d45b-4480-40ab-b381-98026c9ee41f")
 		)
 		(embedded_fonts no)
@@ -518,7 +569,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -529,7 +580,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/28642b1b-519c-4958-8a86-1b1a1ee0e482")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "4")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -2.85 -2.75)
@@ -717,6 +777,8 @@
 			(remove_unused_layers no)
 			(roundrect_rratio 0.147059)
 			(net "+5V")
+			(pinfunction "Pin_1_1")
+			(pintype "passive")
 			(uuid "928a8f73-ec61-4c65-97a5-043e74603f28")
 		)
 		(pad "2" thru_hole oval
@@ -726,6 +788,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/LED3_K")
+			(pinfunction "Pin_2_2")
+			(pintype "passive")
 			(uuid "b35d19df-ad3b-44cf-91c0-b7af0045e4b7")
 		)
 		(pad "3" thru_hole oval
@@ -735,6 +799,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/BTN3_SW")
+			(pinfunction "Pin_3_3")
+			(pintype "passive")
 			(uuid "a6086090-4125-4464-a54e-71aee3359d50")
 		)
 		(pad "4" thru_hole oval
@@ -744,6 +810,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_4_4")
+			(pintype "passive")
 			(uuid "5f973fc2-de18-425a-993a-cd5ee016d8c1")
 		)
 		(embedded_fonts no)
@@ -777,7 +845,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://www.onsemi.com/pub/Collateral/BC550-D.pdf"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -788,7 +856,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "0.1A Ic, 45V Vce, Small Signal NPN Transistor, TO-92"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -799,7 +867,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "TO?92*")
 		(path "/6adf337c-765e-4a88-8ad6-8a50d416f0d2")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "2" "1" "3")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -0.53 1.85)
@@ -924,6 +1001,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/LED3_COL")
+			(pinfunction "C_1")
+			(pintype "passive")
 			(uuid "ecae87ea-84dd-4524-9ad6-4f03863386a5")
 		)
 		(pad "2" thru_hole oval
@@ -933,6 +1012,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(Q3-B)")
+			(pinfunction "B_2")
+			(pintype "input")
 			(uuid "82a739c8-95ae-498e-9abe-e4776cf15a32")
 		)
 		(pad "3" thru_hole oval
@@ -942,6 +1023,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "E_3")
+			(pintype "passive")
 			(uuid "6f083cfc-6766-46fa-a740-db68fd393f9f")
 		)
 		(embedded_fonts no)
@@ -1045,7 +1128,7 @@
 		(layer "F.Cu")
 		(uuid "1ff4dd93-e1fc-4510-a760-ccce26bb150a")
 		(at 101.88 139.3)
-		(property "Reference" "R16"
+		(property "Reference" "R13"
 			(at 3.81 -2.37 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -1081,7 +1164,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -1092,7 +1175,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/2ab2dd24-c514-4982-9c7e-8dbc4f61bed7")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 0.539999 -1.37)
@@ -1214,7 +1306,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED4_COL")
+			(net "/LED1_COL")
+			(pintype "passive")
 			(uuid "ec555e92-0e15-4950-81cd-6f39779922f0")
 		)
 		(pad "2" thru_hole circle
@@ -1223,7 +1316,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED4_K")
+			(net "/LED1_K")
+			(pintype "passive")
 			(uuid "d3fd2208-9cde-49fc-9ba9-47cbc3a80841")
 		)
 		(embedded_fonts no)
@@ -1268,7 +1362,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -1279,7 +1373,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/8069ba38-6e04-47de-913d-be6f53ec98d8")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 7.079999 1.37)
@@ -1402,6 +1505,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/BTN3_GPIO21")
+			(pintype "passive")
 			(uuid "404e8623-e056-4cb8-930b-f42b0c0241aa")
 		)
 		(pad "2" thru_hole circle
@@ -1411,6 +1515,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/BTN3_SW")
+			(pintype "passive")
 			(uuid "b919f356-dc3d-4682-aef2-8191faba7c62")
 		)
 		(embedded_fonts no)
@@ -1419,7 +1524,7 @@
 		(layer "F.Cu")
 		(uuid "42a86345-cf2d-48f2-ac1b-527eea1f3347")
 		(at 124.7 127.5)
-		(property "Reference" "R5"
+		(property "Reference" "R6"
 			(at 3.81 -2.37 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -1455,7 +1560,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -1466,7 +1571,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/422fd39e-ca83-44ee-a633-bea1e32c68c4")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 0.539999 -1.37)
@@ -1588,7 +1702,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED1_GPIO32")
+			(net "/LED2_GPIO32")
+			(pintype "passive")
 			(uuid "b1c3e19b-4e51-4d7e-b649-40e7c60bb977")
 		)
 		(pad "2" thru_hole circle
@@ -1597,7 +1712,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q1-B)")
+			(net "Net-(Q2-B)")
+			(pintype "passive")
 			(uuid "9205c9b2-33b6-44ae-9369-ad88a361bcdd")
 		)
 		(embedded_fonts no)
@@ -1606,7 +1722,7 @@
 		(layer "F.Cu")
 		(uuid "4321c59a-9238-4804-aa83-cbf1f1ff54c7")
 		(at 132.32 131 180)
-		(property "Reference" "R9"
+		(property "Reference" "R10"
 			(at 3.81 -2.37 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -1642,7 +1758,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -1653,7 +1769,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/c80cc530-a2f0-4f39-a5bc-0fd7c13210b8")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 7.079999 1.37)
@@ -1775,7 +1900,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q1-B)")
+			(net "Net-(Q2-B)")
+			(pintype "passive")
 			(uuid "bc54d6c7-420d-49f1-9d19-f79a9a169d2a")
 		)
 		(pad "2" thru_hole circle
@@ -1785,6 +1911,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "ed0cbf3f-3f63-47d3-8687-742869d840de")
 		)
 		(embedded_fonts no)
@@ -1924,7 +2051,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -1935,7 +2062,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "C_*")
 		(path "/cc6b5cea-895a-444f-8b69-ecb17686e369")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 2.015 0.92)
@@ -1998,6 +2134,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/BTN3_GPIO21")
+			(pintype "passive")
 			(uuid "966f951f-409c-4cf8-a359-c84f450feb49")
 		)
 		(pad "2" thru_hole circle
@@ -2007,6 +2144,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "da3d245f-d618-4229-9fbd-8f2923667390")
 		)
 		(embedded_fonts no)
@@ -2015,7 +2153,7 @@
 		(layer "F.Cu")
 		(uuid "51e0c558-1e97-4e74-b0d2-52771040fcab")
 		(at 142.82 127.5 180)
-		(property "Reference" "R1"
+		(property "Reference" "R2"
 			(at 3.81 -2.37 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -2051,7 +2189,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -2062,7 +2200,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/ea481089-1e55-480a-aae8-60d1c1d3d6dc")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 7.079999 1.37)
@@ -2184,7 +2331,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN1_GPIO22")
+			(net "/BTN2_GPIO22")
+			(pintype "passive")
 			(uuid "78870940-fcca-48df-99f6-8995d14b42bb")
 		)
 		(pad "2" thru_hole circle
@@ -2193,7 +2341,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN1_SW")
+			(net "/BTN2_SW")
+			(pintype "passive")
 			(uuid "3600ba82-f16e-4a1c-93dc-8d7535cde89b")
 		)
 		(embedded_fonts no)
@@ -2202,7 +2351,7 @@
 		(layer "F.Cu")
 		(uuid "52e6ebfe-db5c-4991-a60a-796d0b2e9611")
 		(at 129.199999 144)
-		(property "Reference" "J2"
+		(property "Reference" "J3"
 			(at 3.75 -3.55 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -2214,7 +2363,7 @@
 				)
 			)
 		)
-		(property "Value" "Button 1 (JST-XH)"
+		(property "Value" "Button 2 (JST-XH)"
 			(at 3.75 4.6 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -2238,7 +2387,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -2249,7 +2398,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/1782cadc-0bc8-4cba-9728-89000abda188")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "4")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -2.85 -2.75)
@@ -2437,6 +2595,8 @@
 			(remove_unused_layers no)
 			(roundrect_rratio 0.147059)
 			(net "+5V")
+			(pinfunction "Pin_1_1")
+			(pintype "passive")
 			(uuid "9eebc41f-fef4-43fa-951e-3c718c451020")
 		)
 		(pad "2" thru_hole oval
@@ -2445,7 +2605,9 @@
 			(drill 0.95)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED1_K")
+			(net "/LED2_K")
+			(pinfunction "Pin_2_2")
+			(pintype "passive")
 			(uuid "37ed29bf-5eea-4ffb-b69c-7618d5ef2dd7")
 		)
 		(pad "3" thru_hole oval
@@ -2454,7 +2616,9 @@
 			(drill 0.95)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN1_SW")
+			(net "/BTN2_SW")
+			(pinfunction "Pin_3_3")
+			(pintype "passive")
 			(uuid "738a1489-a6ca-4f10-8dba-31c6d518ffa1")
 		)
 		(pad "4" thru_hole oval
@@ -2464,6 +2628,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_4_4")
+			(pintype "passive")
 			(uuid "05b224d9-8c72-4ff4-941a-a1f5132ef169")
 		)
 		(embedded_fonts no)
@@ -2508,7 +2674,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -2519,7 +2685,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/1679e36f-85b9-4634-9080-163ec49e628e")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "4")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -1.38 -1.38)
@@ -2661,6 +2836,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/SPARE_GPIO2")
+			(pinfunction "Pin_1_1")
+			(pintype "passive")
 			(uuid "02413854-4cf3-4b86-a6f4-32d87371c962")
 		)
 		(pad "2" thru_hole circle
@@ -2670,6 +2847,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/SPARE_GPIO3")
+			(pinfunction "Pin_2_2")
+			(pintype "passive")
 			(uuid "066aedba-1f5c-4b46-9e91-9cbae3154fb9")
 		)
 		(pad "3" thru_hole circle
@@ -2679,6 +2858,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_3_3")
+			(pintype "passive")
 			(uuid "d4ee7a48-5b68-47ab-80d8-3ecb4c0b3878")
 		)
 		(pad "4" thru_hole circle
@@ -2688,6 +2869,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_4_4")
+			(pintype "passive")
 			(uuid "584c9f7e-b54d-4767-9ef2-da755b888611")
 		)
 		(embedded_fonts no)
@@ -2696,7 +2879,7 @@
 		(layer "F.Cu")
 		(uuid "571bd647-1bfd-43b1-bf3e-9f0cf29d23e6")
 		(at 110.12 131 180)
-		(property "Reference" "R12"
+		(property "Reference" "R9"
 			(at 3.81 -2.37 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -2732,7 +2915,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -2743,7 +2926,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/95f88502-a2c2-4a07-b7f7-e7d9099eb061")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 7.079999 1.37)
@@ -2865,7 +3057,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q4-B)")
+			(net "Net-(Q1-B)")
+			(pintype "passive")
 			(uuid "a54e7a59-3207-42c7-aca5-ce023200f695")
 		)
 		(pad "2" thru_hole circle
@@ -2875,6 +3068,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "f6ad4c3d-4164-4747-b855-ee7d42b51310")
 		)
 		(embedded_fonts no)
@@ -2883,7 +3077,7 @@
 		(layer "F.Cu")
 		(uuid "652ee74d-2bd8-41ad-8a91-ac6afed34bc7")
 		(at 187.22 131.199999 180)
-		(property "Reference" "C2"
+		(property "Reference" "C4"
 			(at 1.25 -2.05 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -2919,7 +3113,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -2930,7 +3124,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "C_*")
 		(path "/86f46c53-e787-4cc2-bf29-d516fa42a513")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 2.015 0.92)
@@ -2992,7 +3195,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN2_GPIO20")
+			(net "/BTN4_GPIO20")
+			(pintype "passive")
 			(uuid "79929ea1-26e2-4364-9303-23d906372ea0")
 		)
 		(pad "2" thru_hole circle
@@ -3002,6 +3206,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "f6b9d502-08d7-4ee2-948c-3a29c8588393")
 		)
 		(embedded_fonts no)
@@ -3010,7 +3215,7 @@
 		(layer "F.Cu")
 		(uuid "6bf19a2f-fe1d-49f4-89bb-a82443befeaa")
 		(at 107 144)
-		(property "Reference" "J5"
+		(property "Reference" "J2"
 			(at 3.75 -3.550001 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -3022,7 +3227,7 @@
 				)
 			)
 		)
-		(property "Value" "Button 4 (JST-XH)"
+		(property "Value" "Button 1 (JST-XH)"
 			(at 3.75 4.599999 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -3046,7 +3251,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -3057,7 +3262,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/03ddd9fa-217b-4006-99f9-bafc7cce47b7")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "4")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -2.85 -2.750001)
@@ -3245,6 +3459,8 @@
 			(remove_unused_layers no)
 			(roundrect_rratio 0.147059)
 			(net "+5V")
+			(pinfunction "Pin_1_1")
+			(pintype "passive")
 			(uuid "2dba4701-2922-4190-bbde-436b97decf9e")
 		)
 		(pad "2" thru_hole oval
@@ -3253,7 +3469,9 @@
 			(drill 0.95)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED4_K")
+			(net "/LED1_K")
+			(pinfunction "Pin_2_2")
+			(pintype "passive")
 			(uuid "4a3f1bcb-3c11-4077-9c0d-e8ee8d996ead")
 		)
 		(pad "3" thru_hole oval
@@ -3262,7 +3480,9 @@
 			(drill 0.95)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN4_SW")
+			(net "/BTN1_SW")
+			(pinfunction "Pin_3_3")
+			(pintype "passive")
 			(uuid "7bdbeafb-d83c-40d5-bbf1-33337042992c")
 		)
 		(pad "4" thru_hole oval
@@ -3272,6 +3492,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_4_4")
+			(pintype "passive")
 			(uuid "8951e352-3dc9-4c95-9ebb-7fbcd4f14628")
 		)
 		(embedded_fonts no)
@@ -3280,7 +3502,7 @@
 		(layer "F.Cu")
 		(uuid "776e64cd-5468-4ec8-92fb-d2a2a3ebd2d8")
 		(at 102.5 127.5)
-		(property "Reference" "R8"
+		(property "Reference" "R5"
 			(at 3.81 -2.37 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -3316,7 +3538,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -3327,7 +3549,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/4a5ffae4-1b07-48a2-8bab-543c980a0a23")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 0.539999 -1.37)
@@ -3449,7 +3680,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED4_GPIO5")
+			(net "/LED1_GPIO5")
+			(pintype "passive")
 			(uuid "e0e2bb08-58a8-42e1-be12-84d15c6a3a11")
 		)
 		(pad "2" thru_hole circle
@@ -3458,7 +3690,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q4-B)")
+			(net "Net-(Q1-B)")
+			(pintype "passive")
 			(uuid "5c3dc767-2a78-459a-93b4-2a66e71553ab")
 		)
 		(embedded_fonts no)
@@ -3503,7 +3736,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Polarized capacitor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -3514,7 +3747,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "CP_*")
 		(path "/0bbb55de-1474-41f3-b42b-63daececf75b")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -1.804775 -1.475001)
@@ -4779,6 +5021,7 @@
 			(remove_unused_layers no)
 			(roundrect_rratio 0.15625)
 			(net "+5V")
+			(pintype "passive")
 			(uuid "2f581b34-e31f-496c-8358-21946d445808")
 		)
 		(pad "2" thru_hole circle
@@ -4788,6 +5031,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "57121fbc-9df2-4bfb-81be-1cb12a5cf7be")
 		)
 		(embedded_fonts no)
@@ -4832,7 +5076,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -4843,7 +5087,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/dc5d5374-9d4b-4da7-ab50-d83a8640af43")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 0.539999 -1.37)
@@ -4966,6 +5219,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/LED3_GPIO4")
+			(pintype "passive")
 			(uuid "c7361909-7678-4edf-9908-ce1733f61acb")
 		)
 		(pad "2" thru_hole circle
@@ -4975,6 +5229,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(Q3-B)")
+			(pintype "passive")
 			(uuid "18b8b90a-87e4-477b-8225-a671c0dd1c54")
 		)
 		(embedded_fonts no)
@@ -5078,7 +5333,7 @@
 		(layer "F.Cu")
 		(uuid "8c9436f9-98f8-41d9-8f8b-30b927f4eca7")
 		(at 142.82 131.199999 180)
-		(property "Reference" "C1"
+		(property "Reference" "C2"
 			(at 1.25 -2.049999 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -5114,7 +5369,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -5125,7 +5380,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "C_*")
 		(path "/32e6afa9-0fae-4db5-921d-e02c82d31f2c")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 2.015 0.92)
@@ -5187,7 +5451,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN1_GPIO22")
+			(net "/BTN2_GPIO22")
+			(pintype "passive")
 			(uuid "fb1bcdac-da17-479a-a9dd-68debfe320e2")
 		)
 		(pad "2" thru_hole circle
@@ -5197,6 +5462,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "ac0eb3ad-cd4c-48ec-a3d5-a869929bdc8b")
 		)
 		(embedded_fonts no)
@@ -5205,7 +5471,7 @@
 		(layer "F.Cu")
 		(uuid "9758abe5-f1b2-481f-b2df-b25eed04f39c")
 		(at 131.05 135.5)
-		(property "Reference" "Q1"
+		(property "Reference" "Q2"
 			(at 1.27 -3.56 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -5230,7 +5496,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://www.onsemi.com/pub/Collateral/BC550-D.pdf"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -5241,7 +5507,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "0.1A Ic, 45V Vce, Small Signal NPN Transistor, TO-92"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -5252,7 +5518,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "TO?92*")
 		(path "/7f60aa43-ab92-451b-96bf-1271d83fc6cb")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "2" "1" "3")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -0.53 1.85)
@@ -5376,7 +5651,9 @@
 			(drill 0.75)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED1_COL")
+			(net "/LED2_COL")
+			(pinfunction "C_1")
+			(pintype "passive")
 			(uuid "8c26961b-21f5-45e7-9701-4d9139b65f3e")
 		)
 		(pad "2" thru_hole oval
@@ -5385,7 +5662,9 @@
 			(drill 0.75)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q1-B)")
+			(net "Net-(Q2-B)")
+			(pinfunction "B_2")
+			(pintype "input")
 			(uuid "11637abc-bc20-41d3-b071-f6a28b149a1b")
 		)
 		(pad "3" thru_hole oval
@@ -5395,6 +5674,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "E_3")
+			(pintype "passive")
 			(uuid "996f163e-7314-4dcf-8c05-f26dfece617f")
 		)
 		(embedded_fonts no)
@@ -5403,7 +5684,7 @@
 		(layer "F.Cu")
 		(uuid "9794e2b2-d61a-430e-b18a-8e0c23c3822f")
 		(at 173.6 144)
-		(property "Reference" "J3"
+		(property "Reference" "J5"
 			(at 3.75 -3.55 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -5415,7 +5696,7 @@
 				)
 			)
 		)
-		(property "Value" "Button 2 (JST-XH)"
+		(property "Value" "Button 4 (JST-XH)"
 			(at 3.75 4.6 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -5439,7 +5720,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -5450,7 +5731,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/2d80cb70-ab7d-4ac8-a1ef-5bfaf4529c26")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "4")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -2.85 -2.75)
@@ -5638,6 +5928,8 @@
 			(remove_unused_layers no)
 			(roundrect_rratio 0.147059)
 			(net "+5V")
+			(pinfunction "Pin_1_1")
+			(pintype "passive")
 			(uuid "966063c3-1db4-429a-9ebc-f81aa7062136")
 		)
 		(pad "2" thru_hole oval
@@ -5646,7 +5938,9 @@
 			(drill 0.95)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED2_K")
+			(net "/LED4_K")
+			(pinfunction "Pin_2_2")
+			(pintype "passive")
 			(uuid "b34fd17f-7a20-4d90-afac-aab0dad9652c")
 		)
 		(pad "3" thru_hole oval
@@ -5655,7 +5949,9 @@
 			(drill 0.95)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN2_SW")
+			(net "/BTN4_SW")
+			(pinfunction "Pin_3_3")
+			(pintype "passive")
 			(uuid "bdf19696-68d7-496d-a231-a1f8ff7fa340")
 		)
 		(pad "4" thru_hole oval
@@ -5665,6 +5961,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_4_4")
+			(pintype "passive")
 			(uuid "c522f631-3240-44bc-9351-f6dcd4ef61c8")
 		)
 		(embedded_fonts no)
@@ -5709,7 +6007,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Generic connector, single row, 01x20, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 0 0 -90)
 			(layer "F.Fab")
 			(hide yes)
@@ -5720,7 +6018,18 @@
 				)
 			)
 		)
+		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/9dea2b70-5bf0-452a-8f5b-05b89e62967f")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14" "15"
+					"16" "17" "18" "19" "20"
+				)
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -1.330001 49.59)
@@ -5891,6 +6200,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_1-Pad1)")
+			(pinfunction "Pin_1_1")
+			(pintype "passive+no_connect")
 			(uuid "de50292c-5df5-4b5f-8ca6-4e739cc4a3a8")
 		)
 		(pad "2" thru_hole circle
@@ -5900,6 +6211,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_2-Pad2)")
+			(pinfunction "Pin_2_2")
+			(pintype "passive+no_connect")
 			(uuid "bfb8b466-fe6d-4363-b8e6-3952e0298d0d")
 		)
 		(pad "3" thru_hole circle
@@ -5909,6 +6222,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_3_3")
+			(pintype "passive")
 			(uuid "6cf6c39f-3ed0-41d1-9e8e-237e353a4d16")
 		)
 		(pad "4" thru_hole circle
@@ -5918,6 +6233,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_4-Pad4)")
+			(pinfunction "Pin_4_4")
+			(pintype "passive+no_connect")
 			(uuid "3bd1036e-9008-4c62-9e94-b7a545eaf807")
 		)
 		(pad "5" thru_hole circle
@@ -5927,6 +6244,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_5-Pad5)")
+			(pinfunction "Pin_5_5")
+			(pintype "passive+no_connect")
 			(uuid "9731df94-9397-4521-99b3-52d1f1c4c7f6")
 		)
 		(pad "6" thru_hole circle
@@ -5936,6 +6255,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_6-Pad6)")
+			(pinfunction "Pin_6_6")
+			(pintype "passive+no_connect")
 			(uuid "b60432d0-6e7f-4284-ad2d-048c51791e0d")
 		)
 		(pad "7" thru_hole circle
@@ -5945,6 +6266,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_7-Pad7)")
+			(pinfunction "Pin_7_7")
+			(pintype "passive+no_connect")
 			(uuid "f0d9a0e4-d928-4324-8f4d-f12d9e803634")
 		)
 		(pad "8" thru_hole circle
@@ -5954,6 +6277,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_8_8")
+			(pintype "passive")
 			(uuid "1491fe53-2199-4283-b643-ea880b112379")
 		)
 		(pad "9" thru_hole circle
@@ -5963,6 +6288,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_9-Pad9)")
+			(pinfunction "Pin_9_9")
+			(pintype "passive+no_connect")
 			(uuid "ffb8f0cb-d4d5-4e13-a825-f7ab0ecee7e7")
 		)
 		(pad "10" thru_hole circle
@@ -5972,6 +6299,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_10-Pad10)")
+			(pinfunction "Pin_10_10")
+			(pintype "passive+no_connect")
 			(uuid "5a759952-6498-41ed-9dc9-8e9f24fe141a")
 		)
 		(pad "11" thru_hole circle
@@ -5980,7 +6309,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED4_GPIO5")
+			(net "/LED1_GPIO5")
+			(pinfunction "Pin_11_11")
+			(pintype "passive")
 			(uuid "9c7dbda1-395b-4aa1-8eee-8083e00c22c4")
 		)
 		(pad "12" thru_hole circle
@@ -5990,6 +6321,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/LED3_GPIO4")
+			(pinfunction "Pin_12_12")
+			(pintype "passive")
 			(uuid "60e16fdc-625f-4293-94d6-478074211130")
 		)
 		(pad "13" thru_hole circle
@@ -5999,6 +6332,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_13_13")
+			(pintype "passive")
 			(uuid "efe8d21e-0910-4a6c-a2c8-4e2d90d03247")
 		)
 		(pad "14" thru_hole circle
@@ -6008,6 +6343,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/SPARE_GPIO3")
+			(pinfunction "Pin_14_14")
+			(pintype "passive")
 			(uuid "4c6d7858-325b-4174-a2be-33c45b2902fa")
 		)
 		(pad "15" thru_hole circle
@@ -6017,6 +6354,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/SPARE_GPIO2")
+			(pinfunction "Pin_15_15")
+			(pintype "passive")
 			(uuid "d92d7179-1483-4417-a18a-13b0af7c76d6")
 		)
 		(pad "16" thru_hole circle
@@ -6026,6 +6365,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_16-Pad16)")
+			(pinfunction "Pin_16_16")
+			(pintype "passive+no_connect")
 			(uuid "b91a02bb-f269-4327-ae2f-0ac2c2d2fd21")
 		)
 		(pad "17" thru_hole circle
@@ -6035,6 +6376,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_17-Pad17)")
+			(pinfunction "Pin_17_17")
+			(pintype "passive+no_connect")
 			(uuid "de0cada8-634c-49b5-9c9d-3c40b4ca739c")
 		)
 		(pad "18" thru_hole circle
@@ -6044,6 +6387,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "Pin_18_18")
+			(pintype "passive")
 			(uuid "295064fe-ca5f-4478-b412-97208a2ff019")
 		)
 		(pad "19" thru_hole circle
@@ -6053,6 +6398,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_19-Pad19)")
+			(pinfunction "Pin_19_19")
+			(pintype "passive+no_connect")
 			(uuid "3f8515b8-d9d0-45cf-9d30-86a3192fd74b")
 		)
 		(pad "20" thru_hole circle
@@ -6062,6 +6409,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "unconnected-(J1-Pin_20-Pad20)")
+			(pinfunction "Pin_20_20")
+			(pintype "passive+no_connect")
 			(uuid "69175dc6-02b2-435d-ad11-23d63fb82f4f")
 		)
 		(embedded_fonts no)
@@ -6070,7 +6419,7 @@
 		(layer "F.Cu")
 		(uuid "a2493056-032a-493e-bad4-d8ac8664ed47")
 		(at 169.1 127.5)
-		(property "Reference" "R6"
+		(property "Reference" "R8"
 			(at 3.81 -2.37 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -6106,7 +6455,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -6117,7 +6466,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/cd3dd450-a919-4de0-af3d-4e0423956dc5")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 0.539999 -1.37)
@@ -6239,7 +6597,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED2_GPIO33")
+			(net "/LED4_GPIO33")
+			(pintype "passive")
 			(uuid "dfb8e77e-2dac-43e6-8520-c10a35d11faf")
 		)
 		(pad "2" thru_hole circle
@@ -6248,7 +6607,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q2-B)")
+			(net "Net-(Q4-B)")
+			(pintype "passive")
 			(uuid "40fdbb64-51a9-4972-a418-66fcd47a8ee6")
 		)
 		(embedded_fonts no)
@@ -6257,7 +6617,7 @@
 		(layer "F.Cu")
 		(uuid "b2789ca6-fe37-414c-86e7-890ea713cab5")
 		(at 176.72 131 180)
-		(property "Reference" "R10"
+		(property "Reference" "R12"
 			(at 3.81 -2.37 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -6293,7 +6653,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -6304,7 +6664,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/8581772c-960e-47cf-8deb-0330372c148f")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 7.079999 1.37)
@@ -6426,7 +6795,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q2-B)")
+			(net "Net-(Q4-B)")
+			(pintype "passive")
 			(uuid "d6136ad7-669b-48a7-8b60-0a3333127abf")
 		)
 		(pad "2" thru_hole circle
@@ -6436,6 +6806,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "a8446689-f69a-4d2a-8ba1-e3495508c8f8")
 		)
 		(embedded_fonts no)
@@ -6444,7 +6815,7 @@
 		(layer "F.Cu")
 		(uuid "b712677b-9087-4b18-bd2d-3e6a7de7b4b5")
 		(at 187.22 127.5 180)
-		(property "Reference" "R2"
+		(property "Reference" "R4"
 			(at 3.81 -2.37 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -6480,7 +6851,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -6491,7 +6862,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/35371855-f1a2-43e5-bcb3-2f728c2df4cb")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 7.079999 1.37)
@@ -6613,7 +6993,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN2_GPIO20")
+			(net "/BTN4_GPIO20")
+			(pintype "passive")
 			(uuid "065c9003-7bfd-48b9-830b-d858abb61cf1")
 		)
 		(pad "2" thru_hole circle
@@ -6622,7 +7003,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN2_SW")
+			(net "/BTN4_SW")
+			(pintype "passive")
 			(uuid "bd2babf4-4f25-4bcf-90b1-d40ed0823fef")
 		)
 		(embedded_fonts no)
@@ -6631,7 +7013,7 @@
 		(layer "F.Cu")
 		(uuid "c20bf4f8-67da-4d13-87c3-50319c3da9ce")
 		(at 175.45 135.5)
-		(property "Reference" "Q2"
+		(property "Reference" "Q4"
 			(at 1.27 -3.56 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -6656,7 +7038,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://www.onsemi.com/pub/Collateral/BC550-D.pdf"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -6667,7 +7049,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "0.1A Ic, 45V Vce, Small Signal NPN Transistor, TO-92"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -6678,7 +7060,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "TO?92*")
 		(path "/ade90b37-7e75-47b4-bb63-0b9c550936fb")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "2" "1" "3")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -0.53 1.85)
@@ -6802,7 +7193,9 @@
 			(drill 0.75)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED2_COL")
+			(net "/LED4_COL")
+			(pinfunction "C_1")
+			(pintype "passive")
 			(uuid "1ceb4f76-0431-481a-b1f2-f6a450873165")
 		)
 		(pad "2" thru_hole oval
@@ -6811,7 +7204,9 @@
 			(drill 0.75)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q2-B)")
+			(net "Net-(Q4-B)")
+			(pinfunction "B_2")
+			(pintype "input")
 			(uuid "30a536ef-ddce-4cf2-af10-54aaa0aaaa51")
 		)
 		(pad "3" thru_hole oval
@@ -6821,6 +7216,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "E_3")
+			(pintype "passive")
 			(uuid "d391c379-0898-4879-b89c-47b20c73978a")
 		)
 		(embedded_fonts no)
@@ -6829,7 +7226,7 @@
 		(layer "F.Cu")
 		(uuid "c848e215-8cb5-4a9d-acc9-9b601f2e02e0")
 		(at 124.08 139.3)
-		(property "Reference" "R13"
+		(property "Reference" "R14"
 			(at 3.81 -2.37 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -6865,7 +7262,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -6876,7 +7273,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/eb8b0a67-0ef6-4b10-816a-b41fe94e652c")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 0.539999 -1.37)
@@ -6998,7 +7404,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED1_COL")
+			(net "/LED2_COL")
+			(pintype "passive")
 			(uuid "c7b8bbab-05af-4152-8fbd-b7633fc22079")
 		)
 		(pad "2" thru_hole circle
@@ -7007,7 +7414,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED1_K")
+			(net "/LED2_K")
+			(pintype "passive")
 			(uuid "624c1245-8a78-4886-8774-ae1b445d8b00")
 		)
 		(embedded_fonts no)
@@ -7052,7 +7460,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -7063,7 +7471,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/90f12d52-9b49-4fd9-8962-be2a6e3c9e54")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 0.539999 -1.37)
@@ -7186,6 +7603,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/LED3_COL")
+			(pintype "passive")
 			(uuid "c16b4ac8-f1e4-41c8-a4af-7856708d1415")
 		)
 		(pad "2" thru_hole circle
@@ -7195,6 +7613,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/LED3_K")
+			(pintype "passive")
 			(uuid "fc1f6391-2a00-446f-abf6-69b8816838ab")
 		)
 		(embedded_fonts no)
@@ -7203,7 +7622,7 @@
 		(layer "F.Cu")
 		(uuid "da350f35-2cb3-4c50-8d58-bc3a828982ec")
 		(at 120.62 131.199999 180)
-		(property "Reference" "C4"
+		(property "Reference" "C1"
 			(at 1.25 -2.05 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -7239,7 +7658,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -7250,7 +7669,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "C_*")
 		(path "/605c753d-3caf-4e4f-bd46-d1983fa8ed6b")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 2.015 0.920001)
@@ -7312,7 +7740,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN4_GPIO23")
+			(net "/BTN1_GPIO23")
+			(pintype "passive")
 			(uuid "34d49bd4-8021-4683-b0e7-830b56acdaee")
 		)
 		(pad "2" thru_hole circle
@@ -7322,6 +7751,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "29df96dc-9193-4ea2-ba99-c68cb31df602")
 		)
 		(embedded_fonts no)
@@ -7330,7 +7760,7 @@
 		(layer "F.Cu")
 		(uuid "ded9d80c-993f-475a-9aa1-2bae55356696")
 		(at 168.48 139.3)
-		(property "Reference" "R14"
+		(property "Reference" "R16"
 			(at 3.81 -2.37 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -7366,7 +7796,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -7377,7 +7807,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/3bc72c2c-80dc-4374-a9a3-293d4658d845")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 0.539999 -1.37)
@@ -7499,7 +7938,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED2_COL")
+			(net "/LED4_COL")
+			(pintype "passive")
 			(uuid "c95a175a-f7ce-4f4c-b838-e5bb6951dcf3")
 		)
 		(pad "2" thru_hole circle
@@ -7508,7 +7948,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED2_K")
+			(net "/LED4_K")
+			(pintype "passive")
 			(uuid "e2cb196c-eb01-44d8-94fb-8219107989d3")
 		)
 		(embedded_fonts no)
@@ -7648,7 +8089,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -7659,7 +8100,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/e0b839aa-cf06-4d88-8773-994c6bc79140")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 7.079999 1.37)
@@ -7782,6 +8232,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(Q3-B)")
+			(pintype "passive")
 			(uuid "db218818-a203-4895-b4f1-cca3ac5d9602")
 		)
 		(pad "2" thru_hole circle
@@ -7791,6 +8242,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "3d0a9155-4dbb-4d16-82a6-3e3aacc802c0")
 		)
 		(embedded_fonts no)
@@ -7799,7 +8251,7 @@
 		(layer "F.Cu")
 		(uuid "eb27aa91-7b49-469e-9e75-b47dab417158")
 		(at 108.85 135.5)
-		(property "Reference" "Q4"
+		(property "Reference" "Q1"
 			(at 1.27 -3.56 0)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -7824,7 +8276,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://www.onsemi.com/pub/Collateral/BC550-D.pdf"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -7835,7 +8287,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "0.1A Ic, 45V Vce, Small Signal NPN Transistor, TO-92"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -7846,7 +8298,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "TO?92*")
 		(path "/e92295db-bc71-4fac-a7fa-2dcbfa033722")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "2" "1" "3")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -0.53 1.85)
@@ -7970,7 +8431,9 @@
 			(drill 0.75)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/LED4_COL")
+			(net "/LED1_COL")
+			(pinfunction "C_1")
+			(pintype "passive")
 			(uuid "28bd9883-e6ef-479f-b83b-8ccb48208fa2")
 		)
 		(pad "2" thru_hole oval
@@ -7979,7 +8442,9 @@
 			(drill 0.75)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "Net-(Q4-B)")
+			(net "Net-(Q1-B)")
+			(pinfunction "B_2")
+			(pintype "input")
 			(uuid "f9da4190-af3e-4030-9549-bb9da9deae3d")
 		)
 		(pad "3" thru_hole oval
@@ -7989,6 +8454,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pinfunction "E_3")
+			(pintype "passive")
 			(uuid "4d16f136-4a49-43c3-b814-22ed125221db")
 		)
 		(embedded_fonts no)
@@ -7997,7 +8464,7 @@
 		(layer "F.Cu")
 		(uuid "ec196905-c8b2-4d62-9f5f-dd392456e58a")
 		(at 120.62 127.5 180)
-		(property "Reference" "R4"
+		(property "Reference" "R1"
 			(at 3.81 -2.37 180)
 			(unlocked yes)
 			(layer "F.SilkS")
@@ -8033,7 +8500,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -8044,7 +8511,16 @@
 				)
 			)
 		)
+		(property ki_fp_filters "R_*")
 		(path "/91b6f6ac-6f31-4224-a1b7-b5812d54ffb8")
+		(sheetname "/")
+		(sheetfile "intercom-carrier.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 7.079999 1.37)
@@ -8166,7 +8642,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN4_GPIO23")
+			(net "/BTN1_GPIO23")
+			(pintype "passive")
 			(uuid "bad3f29a-961e-4ef7-b612-3d10fa87f240")
 		)
 		(pad "2" thru_hole circle
@@ -8175,7 +8652,8 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "/BTN4_SW")
+			(net "/BTN1_SW")
+			(pintype "passive")
 			(uuid "03d83754-d151-41e6-965e-2b2fa261eb2f")
 		)
 		(embedded_fonts no)
@@ -8286,10 +8764,10 @@
 			)
 		)
 	)
-	(gr_text "BTN4"
+	(gr_text "BTN1"
 		(at 119 139.5 0)
 		(layer "F.SilkS")
-		(uuid "bd88c606-0742-400c-8bbf-ae2e5792dbe4")
+		(uuid "7cc0a631-c062-4032-88d8-17dc402d1ecc")
 		(effects
 			(font
 				(size 1.2 1.2)
@@ -8297,10 +8775,10 @@
 			)
 		)
 	)
-	(gr_text "BTN1"
+	(gr_text "BTN2"
 		(at 141.2 139.5 0)
 		(layer "F.SilkS")
-		(uuid "3ef6fab7-5ab1-4a5a-ae01-a31945751616")
+		(uuid "6f496287-0a1e-4973-982d-5d01056875ab")
 		(effects
 			(font
 				(size 1.2 1.2)
@@ -8319,10 +8797,10 @@
 			)
 		)
 	)
-	(gr_text "BTN2"
+	(gr_text "BTN4"
 		(at 185.6 139.5 0)
 		(layer "F.SilkS")
-		(uuid "be287f4b-e353-4e6a-8483-2888919c6266")
+		(uuid "02c4db99-8492-4bee-8cd4-0fdb51ea8aa3")
 		(effects
 			(font
 				(size 1.2 1.2)
@@ -8351,70 +8829,6 @@
 				(thickness 0.224999)
 			)
 		)
-	)
-	(segment
-		(start 159.01 124)
-		(end 142.82 124)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN1_GPIO22")
-		(uuid "1713535e-8620-43eb-9707-0d5eede30091")
-	)
-	(segment
-		(start 142.82 127.5)
-		(end 142.82 131.199999)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN1_GPIO22")
-		(uuid "7451a1e8-38d8-4d7b-9ecd-40463b1df095")
-	)
-	(segment
-		(start 159.01 121.38)
-		(end 159.01 124)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN1_GPIO22")
-		(uuid "b50ced3a-ac29-451e-b6d8-b35dd1f193fa")
-	)
-	(segment
-		(start 142.82 124)
-		(end 142.82 127.5)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN1_GPIO22")
-		(uuid "c53bd11c-ef6b-4ac5-9925-81141ca815be")
-	)
-	(segment
-		(start 166.63 121.38)
-		(end 166.63 124)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN2_GPIO20")
-		(uuid "3df5909b-7a6f-4e62-a655-59791f7a52d8")
-	)
-	(segment
-		(start 166.63 124)
-		(end 187.22 124)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN2_GPIO20")
-		(uuid "9833fa96-5b1f-46d0-b712-e77234eb32ae")
-	)
-	(segment
-		(start 187.22 124)
-		(end 187.22 127.5)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN2_GPIO20")
-		(uuid "b7435caa-fee7-4e32-ad17-f350948d7d65")
-	)
-	(segment
-		(start 187.22 127.5)
-		(end 187.22 131.199999)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN2_GPIO20")
-		(uuid "fde0c1ce-5c82-49b0-bdda-fadfc4a4081e")
 	)
 	(segment
 		(start 165.02 127.5)
@@ -8447,38 +8861,6 @@
 		(layer "F.Cu")
 		(net "/BTN3_GPIO21")
 		(uuid "e7d7ab5e-8626-4d5a-b87e-f0b669d46c3f")
-	)
-	(segment
-		(start 156.47 123.5)
-		(end 120.62 123.5)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN4_GPIO23")
-		(uuid "00c00e0f-6159-4c1a-9710-6937c62f9970")
-	)
-	(segment
-		(start 120.62 123.5)
-		(end 120.62 127.5)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN4_GPIO23")
-		(uuid "0eeaf3b0-fb50-42cb-82b4-a0c3db964608")
-	)
-	(segment
-		(start 156.47 121.38)
-		(end 156.47 123.5)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN4_GPIO23")
-		(uuid "e674cd20-0351-4f25-8e2a-ed460a4cae6f")
-	)
-	(segment
-		(start 120.62 127.5)
-		(end 120.62 131.199999)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN4_GPIO23")
-		(uuid "ecf0819b-05ec-464d-9d37-3cb2e61535a1")
 	)
 	(segment
 		(start 107 146.8)
@@ -8551,30 +8933,6 @@
 		(layer "B.Cu")
 		(net "+5V")
 		(uuid "acbe62ae-55a5-403d-8c8d-a6fa33e49d28")
-	)
-	(segment
-		(start 153.93 103.6)
-		(end 153.93 118.6)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/LED4_GPIO5")
-		(uuid "0c8e1899-f56e-4286-9ac2-e6ced6a879f4")
-	)
-	(segment
-		(start 102.5 118.6)
-		(end 102.5 127.5)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/LED4_GPIO5")
-		(uuid "0f950397-81cc-4eea-bef9-d0af0e624bbb")
-	)
-	(segment
-		(start 153.93 118.6)
-		(end 102.5 118.6)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/LED4_GPIO5")
-		(uuid "6b93e075-146f-4814-99e0-e525bfbdad3e")
 	)
 	(segment
 		(start 150.12 119.87)
@@ -8673,11 +9031,43 @@
 		(uuid "f3c5c03e-b5e9-4242-8000-bdde6e0bf975")
 	)
 	(segment
+		(start 109.5 139.3)
+		(end 109.5 144)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/LED1_K")
+		(uuid "dbead9fa-6808-4dad-92a4-156a6a023f2a")
+	)
+	(segment
+		(start 112 141)
+		(end 112 144)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN1_SW")
+		(uuid "92a3b668-f751-4706-b231-09067e2bf3f4")
+	)
+	(segment
+		(start 113 140)
+		(end 112 141)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN1_SW")
+		(uuid "c186454f-25d9-473e-a13b-31bee4855af0")
+	)
+	(segment
+		(start 113 127.5)
+		(end 113 140)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN1_SW")
+		(uuid "ef70e9a5-49f4-4375-8dde-41d271561a46")
+	)
+	(segment
 		(start 131.699999 139.3)
 		(end 131.699999 144)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/LED1_K")
+		(net "/LED2_K")
 		(uuid "b5307bc3-5d07-468c-a488-caa6964384f1")
 	)
 	(segment
@@ -8685,7 +9075,7 @@
 		(end 135.2 140)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/BTN1_SW")
+		(net "/BTN2_SW")
 		(uuid "18beafeb-6558-413b-a7a1-8e4ed5c03465")
 	)
 	(segment
@@ -8693,7 +9083,7 @@
 		(end 134.199999 141)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/BTN1_SW")
+		(net "/BTN2_SW")
 		(uuid "295f3f52-2fe7-4c37-aa8c-1249d7b64769")
 	)
 	(segment
@@ -8701,40 +9091,8 @@
 		(end 134.199999 144)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/BTN1_SW")
+		(net "/BTN2_SW")
 		(uuid "896c262a-7751-4ec8-ba4c-21aae5f9e9e1")
-	)
-	(segment
-		(start 176.1 139.3)
-		(end 176.1 144)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/LED2_K")
-		(uuid "46600f97-284e-4bea-a02d-990a5d2097af")
-	)
-	(segment
-		(start 179.6 127.5)
-		(end 179.6 140)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN2_SW")
-		(uuid "68da7f00-dcd4-487b-bfae-f5798028187f")
-	)
-	(segment
-		(start 179.6 140)
-		(end 178.6 141)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN2_SW")
-		(uuid "af3ef4f5-4d9d-4911-a408-afd84b6189e6")
-	)
-	(segment
-		(start 178.6 141)
-		(end 178.6 144)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/BTN2_SW")
-		(uuid "d9eeeb76-bddb-459c-a14d-c5da37fb26b8")
 	)
 	(segment
 		(start 153.9 139.3)
@@ -8769,115 +9127,75 @@
 		(uuid "f11d2a18-d927-491a-8b93-6cd904f8276b")
 	)
 	(segment
-		(start 109.5 139.3)
-		(end 109.5 144)
+		(start 176.1 139.3)
+		(end 176.1 144)
 		(width 0.25)
 		(layer "F.Cu")
 		(net "/LED4_K")
-		(uuid "dbead9fa-6808-4dad-92a4-156a6a023f2a")
+		(uuid "46600f97-284e-4bea-a02d-990a5d2097af")
 	)
 	(segment
-		(start 112 141)
-		(end 112 144)
+		(start 179.6 127.5)
+		(end 179.6 140)
 		(width 0.25)
 		(layer "F.Cu")
 		(net "/BTN4_SW")
-		(uuid "92a3b668-f751-4706-b231-09067e2bf3f4")
+		(uuid "68da7f00-dcd4-487b-bfae-f5798028187f")
 	)
 	(segment
-		(start 113 140)
-		(end 112 141)
+		(start 179.6 140)
+		(end 178.6 141)
 		(width 0.25)
 		(layer "F.Cu")
 		(net "/BTN4_SW")
-		(uuid "c186454f-25d9-473e-a13b-31bee4855af0")
+		(uuid "af3ef4f5-4d9d-4911-a408-afd84b6189e6")
 	)
 	(segment
-		(start 113 127.5)
-		(end 113 140)
+		(start 178.6 141)
+		(end 178.6 144)
 		(width 0.25)
 		(layer "F.Cu")
 		(net "/BTN4_SW")
-		(uuid "ef70e9a5-49f4-4375-8dde-41d271561a46")
+		(uuid "d9eeeb76-bddb-459c-a14d-c5da37fb26b8")
 	)
 	(segment
-		(start 141.23 121.38)
-		(end 141.23 119.8)
+		(start 108.85 135.5)
+		(end 108.85 137.3)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/LED2_GPIO33")
-		(uuid "038c97fe-1496-42da-8849-fa0b4f8782b5")
+		(net "/LED1_COL")
+		(uuid "363e41df-e1d4-4c83-a253-f6de5d20e1a3")
 	)
 	(segment
-		(start 141.23 119.8)
-		(end 167.9 119.8)
+		(start 108.85 137.3)
+		(end 101.88 137.3)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/LED2_GPIO33")
-		(uuid "80c4cd58-148e-46d0-b2e1-62f4b841cef2")
-	)
-	(via
-		(at 167.9 119.8)
-		(size 0.8)
-		(drill 0.4)
-		(layers "F.Cu" "B.Cu")
-		(net "/LED2_GPIO33")
-		(uuid "c84d3739-6fd3-42c7-8389-f02f659d90ba")
+		(net "/LED1_COL")
+		(uuid "4230ad64-fec4-4aef-9835-49e610623946")
 	)
 	(segment
-		(start 167.9 125.2)
-		(end 169.1 126.4)
+		(start 101.88 137.3)
+		(end 101.88 139.3)
 		(width 0.25)
-		(layer "B.Cu")
-		(net "/LED2_GPIO33")
-		(uuid "6efaf056-434d-483d-b722-dd5b2fe2f747")
+		(layer "F.Cu")
+		(net "/LED1_COL")
+		(uuid "5cfae1e8-0a8d-4b42-b4ea-19a189e2a3be")
 	)
 	(segment
-		(start 169.1 126.4)
-		(end 169.1 127.5)
+		(start 110.12 127.5)
+		(end 110.12 135.5)
 		(width 0.25)
-		(layer "B.Cu")
-		(net "/LED2_GPIO33")
-		(uuid "845d88f5-a36b-42ae-8b3c-9cd1011d1e2a")
-	)
-	(segment
-		(start 167.9 119.8)
-		(end 167.9 125.2)
-		(width 0.25)
-		(layer "B.Cu")
-		(net "/LED2_GPIO33")
-		(uuid "ec3b9dee-f5c5-430e-9532-0ffb8c8a0579")
-	)
-	(segment
-		(start 124.7 123.6)
-		(end 124.7 127.5)
-		(width 0.25)
-		(layer "B.Cu")
-		(net "/LED1_GPIO32")
-		(uuid "0ed9c333-9f26-4b0e-874a-e4de317ab88d")
-	)
-	(segment
-		(start 143.77 121.38)
-		(end 143.77 123.6)
-		(width 0.25)
-		(layer "B.Cu")
-		(net "/LED1_GPIO32")
-		(uuid "0ffe9d27-7981-406e-957d-f73d520bb296")
-	)
-	(segment
-		(start 143.77 123.6)
-		(end 124.7 123.6)
-		(width 0.25)
-		(layer "B.Cu")
-		(net "/LED1_GPIO32")
-		(uuid "85b2395c-6150-4fa6-981a-d5bea37949fc")
+		(layer "F.Cu")
+		(net "Net-(Q1-B)")
+		(uuid "f683d7db-84da-4e44-8b3d-292521cd6d77")
 	)
 	(segment
 		(start 131.05 135.5)
 		(end 131.05 137.3)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/LED1_COL")
+		(net "/LED2_COL")
 		(uuid "5bd0bd51-dc84-480e-abcd-a61331bf2e99")
 	)
 	(segment
@@ -8885,7 +9203,7 @@
 		(end 124.08 139.3)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/LED1_COL")
+		(net "/LED2_COL")
 		(uuid "75244238-684f-44e3-aa82-a49f5e9d662f")
 	)
 	(segment
@@ -8893,7 +9211,7 @@
 		(end 124.08 137.3)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "/LED1_COL")
+		(net "/LED2_COL")
 		(uuid "e266fe9b-4ee4-4d18-8030-70d7197e3d59")
 	)
 	(segment
@@ -8901,40 +9219,8 @@
 		(end 132.32 135.5)
 		(width 0.25)
 		(layer "F.Cu")
-		(net "Net-(Q1-B)")
-		(uuid "57331311-89ee-4469-bad7-81865aedf4b9")
-	)
-	(segment
-		(start 168.48 137.3)
-		(end 168.48 139.3)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/LED2_COL")
-		(uuid "0f72086a-9b4f-4a14-9799-d2b056777258")
-	)
-	(segment
-		(start 175.45 135.5)
-		(end 175.45 137.3)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/LED2_COL")
-		(uuid "9db0a18c-61cd-4be7-a68e-4d890ea37767")
-	)
-	(segment
-		(start 175.45 137.3)
-		(end 168.48 137.3)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "/LED2_COL")
-		(uuid "b9f2d5a0-8802-4d0c-b0e9-acefd1b3f942")
-	)
-	(segment
-		(start 176.72 127.5)
-		(end 176.72 135.5)
-		(width 0.25)
-		(layer "F.Cu")
 		(net "Net-(Q2-B)")
-		(uuid "bd4f5ee5-0f23-4f3e-a9ac-c390a44eb4ec")
+		(uuid "57331311-89ee-4469-bad7-81865aedf4b9")
 	)
 	(segment
 		(start 153.25 135.5)
@@ -8969,36 +9255,228 @@
 		(uuid "942cf273-3e54-43b6-8db7-8ac2a4a08578")
 	)
 	(segment
-		(start 108.85 135.5)
-		(end 108.85 137.3)
+		(start 168.48 137.3)
+		(end 168.48 139.3)
 		(width 0.25)
 		(layer "F.Cu")
 		(net "/LED4_COL")
-		(uuid "363e41df-e1d4-4c83-a253-f6de5d20e1a3")
+		(uuid "0f72086a-9b4f-4a14-9799-d2b056777258")
 	)
 	(segment
-		(start 108.85 137.3)
-		(end 101.88 137.3)
+		(start 175.45 135.5)
+		(end 175.45 137.3)
 		(width 0.25)
 		(layer "F.Cu")
 		(net "/LED4_COL")
-		(uuid "4230ad64-fec4-4aef-9835-49e610623946")
+		(uuid "9db0a18c-61cd-4be7-a68e-4d890ea37767")
 	)
 	(segment
-		(start 101.88 137.3)
-		(end 101.88 139.3)
+		(start 175.45 137.3)
+		(end 168.48 137.3)
 		(width 0.25)
 		(layer "F.Cu")
 		(net "/LED4_COL")
-		(uuid "5cfae1e8-0a8d-4b42-b4ea-19a189e2a3be")
+		(uuid "b9f2d5a0-8802-4d0c-b0e9-acefd1b3f942")
 	)
 	(segment
-		(start 110.12 127.5)
-		(end 110.12 135.5)
+		(start 176.72 127.5)
+		(end 176.72 135.5)
 		(width 0.25)
 		(layer "F.Cu")
 		(net "Net-(Q4-B)")
-		(uuid "f683d7db-84da-4e44-8b3d-292521cd6d77")
+		(uuid "bd4f5ee5-0f23-4f3e-a9ac-c390a44eb4ec")
+	)
+	(segment
+		(start 156.47 123.5)
+		(end 120.62 123.5)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN1_GPIO23")
+		(uuid "00c00e0f-6159-4c1a-9710-6937c62f9970")
+	)
+	(segment
+		(start 120.62 123.5)
+		(end 120.62 127.5)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN1_GPIO23")
+		(uuid "0eeaf3b0-fb50-42cb-82b4-a0c3db964608")
+	)
+	(segment
+		(start 156.47 121.38)
+		(end 156.47 123.5)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN1_GPIO23")
+		(uuid "e674cd20-0351-4f25-8e2a-ed460a4cae6f")
+	)
+	(segment
+		(start 120.62 127.5)
+		(end 120.62 131.199999)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN1_GPIO23")
+		(uuid "ecf0819b-05ec-464d-9d37-3cb2e61535a1")
+	)
+	(segment
+		(start 159.01 124)
+		(end 142.82 124)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN2_GPIO22")
+		(uuid "1713535e-8620-43eb-9707-0d5eede30091")
+	)
+	(segment
+		(start 142.82 127.5)
+		(end 142.82 131.199999)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN2_GPIO22")
+		(uuid "7451a1e8-38d8-4d7b-9ecd-40463b1df095")
+	)
+	(segment
+		(start 159.01 121.38)
+		(end 159.01 124)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN2_GPIO22")
+		(uuid "b50ced3a-ac29-451e-b6d8-b35dd1f193fa")
+	)
+	(segment
+		(start 142.82 124)
+		(end 142.82 127.5)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN2_GPIO22")
+		(uuid "c53bd11c-ef6b-4ac5-9925-81141ca815be")
+	)
+	(segment
+		(start 166.63 121.38)
+		(end 166.63 124)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN4_GPIO20")
+		(uuid "3df5909b-7a6f-4e62-a655-59791f7a52d8")
+	)
+	(segment
+		(start 166.63 124)
+		(end 187.22 124)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN4_GPIO20")
+		(uuid "9833fa96-5b1f-46d0-b712-e77234eb32ae")
+	)
+	(segment
+		(start 187.22 124)
+		(end 187.22 127.5)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN4_GPIO20")
+		(uuid "b7435caa-fee7-4e32-ad17-f350948d7d65")
+	)
+	(segment
+		(start 187.22 127.5)
+		(end 187.22 131.199999)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/BTN4_GPIO20")
+		(uuid "fde0c1ce-5c82-49b0-bdda-fadfc4a4081e")
+	)
+	(segment
+		(start 153.93 103.6)
+		(end 153.93 118.6)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/LED1_GPIO5")
+		(uuid "0c8e1899-f56e-4286-9ac2-e6ced6a879f4")
+	)
+	(segment
+		(start 102.5 118.6)
+		(end 102.5 127.5)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/LED1_GPIO5")
+		(uuid "0f950397-81cc-4eea-bef9-d0af0e624bbb")
+	)
+	(segment
+		(start 153.93 118.6)
+		(end 102.5 118.6)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/LED1_GPIO5")
+		(uuid "6b93e075-146f-4814-99e0-e525bfbdad3e")
+	)
+	(segment
+		(start 124.7 123.6)
+		(end 124.7 127.5)
+		(width 0.25)
+		(layer "B.Cu")
+		(net "/LED2_GPIO32")
+		(uuid "0ed9c333-9f26-4b0e-874a-e4de317ab88d")
+	)
+	(segment
+		(start 143.77 121.38)
+		(end 143.77 123.6)
+		(width 0.25)
+		(layer "B.Cu")
+		(net "/LED2_GPIO32")
+		(uuid "0ffe9d27-7981-406e-957d-f73d520bb296")
+	)
+	(segment
+		(start 143.77 123.6)
+		(end 124.7 123.6)
+		(width 0.25)
+		(layer "B.Cu")
+		(net "/LED2_GPIO32")
+		(uuid "85b2395c-6150-4fa6-981a-d5bea37949fc")
+	)
+	(segment
+		(start 141.23 121.38)
+		(end 141.23 119.8)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/LED4_GPIO33")
+		(uuid "038c97fe-1496-42da-8849-fa0b4f8782b5")
+	)
+	(segment
+		(start 141.23 119.8)
+		(end 167.9 119.8)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "/LED4_GPIO33")
+		(uuid "80c4cd58-148e-46d0-b2e1-62f4b841cef2")
+	)
+	(via
+		(at 167.9 119.8)
+		(size 0.8)
+		(drill 0.4)
+		(layers "F.Cu" "B.Cu")
+		(net "/LED4_GPIO33")
+		(uuid "c84d3739-6fd3-42c7-8389-f02f659d90ba")
+	)
+	(segment
+		(start 167.9 125.2)
+		(end 169.1 126.4)
+		(width 0.25)
+		(layer "B.Cu")
+		(net "/LED4_GPIO33")
+		(uuid "6efaf056-434d-483d-b722-dd5b2fe2f747")
+	)
+	(segment
+		(start 169.1 126.4)
+		(end 169.1 127.5)
+		(width 0.25)
+		(layer "B.Cu")
+		(net "/LED4_GPIO33")
+		(uuid "845d88f5-a36b-42ae-8b3c-9cd1011d1e2a")
+	)
+	(segment
+		(start 167.9 119.8)
+		(end 167.9 125.2)
+		(width 0.25)
+		(layer "B.Cu")
+		(net "/LED4_GPIO33")
+		(uuid "ec3b9dee-f5c5-430e-9532-0ffb8c8a0579")
 	)
 	(zone
 		(net "GND")

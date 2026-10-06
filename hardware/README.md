@@ -17,14 +17,14 @@ up the right row, from the RJ45 end. Source: Waveshare's [ESP32-P4-ETH](https://
 
 | Use | GPIO | P1 pin | Carrier socket |
 |---|---|---|---|
-| Button 1 (PTT) | GPIO22 | 32 | J7.12 |
-| Button 2 | GPIO20 | 35 | J7.15 |
+| Button 1 (PTT) | GPIO23 | 31 | J7.11 |
+| Button 2 | GPIO22 | 32 | J7.12 |
 | Button 3 | GPIO21 | 34 | J7.14 |
-| Button 4 | GPIO23 | 31 | J7.11 |
-| LED ring 1 | GPIO32 | 26 | J7.6 |
-| LED ring 2 | GPIO33 | 25 | J7.5 |
+| Button 4 | GPIO20 | 35 | J7.15 |
+| LED ring 1 | GPIO5 | 11 | J1.11 |
+| LED ring 2 | GPIO32 | 26 | J7.6 |
 | LED ring 3 | GPIO4 | 12 | J1.12 |
-| LED ring 4 | GPIO5 | 11 | J1.11 |
+| LED ring 4 | GPIO33 | 25 | J7.5 |
 | Spare | GPIO2, GPIO3 | 15, 14 | J1.15, J1.14 → J6 |
 | +5 V (VSYS) | | 39 | J7.19 |
 | GND | | 3, 8, 13, 18, 23, 28, 33, 38 | |
@@ -39,7 +39,7 @@ up the right row, from the RJ45 end. Source: Waveshare's [ESP32-P4-ETH](https://
 - **Under the P4:** only traces, so the P4's bottom-side parts are clear.
 - **PoE module:** it stays on top of the P4 as usual; nothing on the carrier is near it.
 
-**Per button** (four channels along the bottom edge; left to right BTN4, BTN1, BTN3, BTN2, as labelled on the silkscreen):
+**Per button** (four channels along the bottom edge, BTN1–BTN4 from left to right). The buttons are numbered in the order their GPIOs leave the header, so the four button lines run side by side without crossing:
 - **Connector:** a JST-XH 4-pin. Pin 1 = LED+ (+5 V), 2 = LED−, 3 = switch, 4 = GND.
 - **Switch input:** 1 kΩ in series to the GPIO, with 100 nF to GND. The pull-up is the ESP32's own; a pressed button reads low.
 - **LED ring:**
@@ -117,4 +117,4 @@ Print the shell with its back on the bed; the rebate and bosses need no supports
 - **Cable:** the RJ45 plug and the cable's bend between the jack and the cable opening. A slim patch cable helps.
 - **Speaker chamber:** check it is sealed, and add foam between the speaker and the plate.
 - **Button depth:** 46 mm inside depth assumes a 33 mm body plus its plug. Measure the real buttons.
-- **Button cables:** the JSTs are labelled BTN4, BTN1, BTN3, BTN2 from left to right; cut each cable to its button.
+- **Button cables:** the JSTs are labelled BTN1–BTN4 from left to right; cut each cable to its button.

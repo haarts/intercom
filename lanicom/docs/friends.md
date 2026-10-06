@@ -9,9 +9,9 @@ in or talk.
 
 | Part | Notes |
 |---|---|
-| Waveshare **ESP32-P4-WIFI6-POE-ETH** | Has the codec and mic on board. Powered by PoE or USB-C. |
+| Waveshare **ESP32-P4-ETH** (with its PoE module) | Has the codec and mic on board. Powered by PoE or USB-C. Ethernet only, no Wi-Fi. |
 | Speaker, 8 Ω 2 W, with an MX1.25 plug | "JST 1.25" hobby cables are usually PicoBlade-compatible; JST GH is not. |
-| Momentary push button | Wired between GPIO22 and GND. Never connect a pin to 5 V. |
+| Momentary push button | Wired between GPIO23 and GND (button 1 on the carrier board). Never connect a pin to 5 V. |
 | Ethernet cable (recommended) or Wi-Fi | Wired gives the lowest latency. |
 
 ## 1. Make a network key (once)

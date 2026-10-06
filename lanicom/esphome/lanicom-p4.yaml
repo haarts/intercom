@@ -13,7 +13,9 @@ substitutions:
   name: lanicom-p4
   friendly_name: Intercom
   # PTT button between this header pin and GND. GPIO35 (BOOT) is Ethernet TXD1 on this board.
-  ptt_pin: GPIO22
+  # On the carrier board (hardware/carrier) this is button 1; buttons 1-4 are GPIO23, 22, 21, 20
+  # and their LED rings GPIO5, 32, 4, 33.
+  ptt_pin: GPIO23
   # What the PTT button talks to: all | zone:<name> | device:<id>
   ptt_target: all
   zones: ""
@@ -211,9 +213,9 @@ binary_sensor:
           target: ${ptt_target}
     on_release:
       - lanicom.stop_talking:
-  # Four room buttons (the brass front plate) would look like this:
+  # The other carrier buttons (2-4: GPIO22, GPIO21, GPIO20) would look like this:
   #  - platform: gpio
-  #    pin: { number: GPIO20, mode: INPUT_PULLUP, inverted: true }
+  #    pin: { number: GPIO22, mode: INPUT_PULLUP, inverted: true }
   #    on_press: { lanicom.start_talking: { target: "zone:workshop" } }
   #    on_release: { lanicom.stop_talking: }
   - platform: template
