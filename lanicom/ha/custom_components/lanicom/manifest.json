@@ -1,0 +1,14 @@
+{
+  "domain": "lanicom",
+  "name": "lanicom intercom",
+  "codeowners": ["@haarts"],
+  "config_flow": true,
+  "dependencies": ["ffmpeg", "media_source"],
+  "documentation": "https://github.com/haarts/intercom/tree/main/lanicom",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/haarts/intercom/issues",
+  "requirements": [],
+  "version": "0.1.0",
+  "zeroconf": ["_lanicom._udp.local."]
+}

@@ -1,0 +1,57 @@
+name: lanicom
+
+on:
+  push:
+    paths: ["lanicom/**", ".github/workflows/lanicom.yml"]
+  pull_request:
+    paths: ["lanicom/**", ".github/workflows/lanicom.yml"]
+
+jobs:
+  core-and-python:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: System packages
+        run: sudo apt-get update && sudo apt-get install -y libmbedtls-dev libopus0 ffmpeg
+      - name: C core (ASan/UBSan)
+        run: |
+          cmake -S lanicom/lanicom-core -B lanicom/lanicom-core/build
+          cmake --build lanicom/lanicom-core/build -j
+          ctest --test-dir lanicom/lanicom-core/build --output-on-failure
+      - name: Python library, CLI and C interop
+        run: |
+          pip install -e 'lanicom/python[test]'
+          python lanicom/python/tools/gen_vectors.py
+          git diff --exit-code lanicom/spec/vectors  # vectors are reproducible
+          pytest -v lanicom/python
+      - name: Vendored library in the HA integration is current
+        run: python lanicom/ha/sync_lib.py --check
+
+  home-assistant:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: sudo apt-get update && sudo apt-get install -y libopus0 ffmpeg
+      - run: pip install pytest-homeassistant-custom-component ha-ffmpeg
+      - run: cd lanicom/ha && pytest -v
+
+  esphome:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install esphome==2026.7.1
+      - name: Validate and build the firmware
+        working-directory: lanicom/esphome
+        run: |
+          python -c "import base64,os; print(f'api_encryption_key: \"{base64.b64encode(os.urandom(32)).decode()}\"\nota_password: ci\nweb_password: ci')" > secrets.yaml
+          esphome config lanicom-p4.yaml
+          esphome compile lanicom-p4.yaml

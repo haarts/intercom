@@ -1,0 +1,54 @@
+// LAN intercom control messages. Normative schema; see PROTOCOL.md.
+//
+// The implementations (C core, Python) hand-code this wire format instead of
+// using generated code: five small messages don't justify a code generator in
+// the firmware build, and generated Python code is tied to the protobuf
+// runtime version (which Home Assistant pins). The test suites check both
+// codecs against the official protobuf library, using this file.
+//
+// Unknown fields MUST be skipped, so fields can be added without a version bump.
+
+syntax = "proto3";
+package lanicom.v1;
+
+message Target {
+  oneof t {
+    fixed32 device = 1;  // one device, by sender_id
+    string zone = 2;     // every device that lists this zone
+    bool all = 3;        // every device
+  }
+}
+
+// Capability bits for Hello.caps.
+// CAP_PLAYBACK (1): plays audio. Talkers don't send audio to peers without it.
+// CAP_CAPTURE  (2): can talk.
+// CAP_MONITOR  (4): wants TalkStart/TalkStop for every stream, without audio.
+
+message Hello {
+  string name = 1;
+  repeated string zones = 2;
+  uint32 caps = 3;
+  // Liveness proof (PROTOCOL.md, "Epoch verification"): a peer that sees a
+  // new epoch from us sends `challenge`; we answer with `echo` = that value.
+  fixed64 challenge = 4;
+  fixed64 echo = 5;
+  // Set when the device shuts down cleanly; peers forget it at once.
+  bool bye = 6;
+}
+
+message TalkStart {
+  Target target = 1;
+  uint32 stream_id = 2;
+}
+
+message TalkStop {
+  uint32 stream_id = 1;
+}
+
+message Control {
+  oneof msg {
+    Hello hello = 1;
+    TalkStart talk_start = 2;
+    TalkStop talk_stop = 3;
+  }
+}

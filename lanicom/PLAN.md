@@ -1,0 +1,131 @@
+# lanicom: serverless LAN intercom (revised plan)
+
+This is the plan for the serverless follow-up to the Mumble route. It revises
+the first draft after a critical review (section 1) and records what has been
+built and what is still open (section 5).
+
+**Goal:** push-to-talk intercom devices on one LAN (wired or Wi-Fi) that find
+each other and talk directly. There is no Mumble server and no Home Assistant
+dependency. Devices can be added or removed at will. Home Assistant can join as
+an ordinary peer. Friends can run it with zero infrastructure.
+
+## 1. Review of the first draft: what changed and why
+
+| # | First draft | Problem | Now |
+|---|---|---|---|
+| 1 | Raw **ESP-IDF** firmware with its own AP + HTTP provisioning page; OTA deferred | This repo already chose ESPHome, for good reasons (PROJECT_NOTES.md). The P4 audio path (ES8311 quirks, mic gains, micro-opus on RISC-V, PTT) is proven there. Raw IDF would redo all of that, plus provisioning, OTA, logging and a web UI. | An **ESPHome external component** (`esphome/components/lanicom`). Provisioning is ESPHome's `web_server` with a password text entity. OTA comes free. Friends flash from a browser. HA stays optional (`api:` with `reboot_timeout: 0s`). |
+| 2 | Nonce = random 64-bit epoch ‖ seq, one key shared by all devices | All devices share one (key, nonce) space, so a single epoch collision anywhere leaks plaintext and allows forgery. Safety rests entirely on the boot-time RNG. | **Per-sender keys** (HKDF with `sender_id`), so devices can't collide. The epoch is a **persisted boot counter ‖ random**, so one device can't repeat even with a bad RNG. |
+| 3 | Replay of an old session: check `unix_ms` in TalkStart if SNTP is available, otherwise "accept and log" | A serverless LAN often has no reliable time, so in practice nothing is checked. The check also covers TalkStart only, not the audio packets themselves. | **Epoch verification by challenge/echo** (PROTOCOL.md §4). A receiver accepts a new epoch only after the sender echoes a fresh random challenge. Recorded sessions can't be replayed, even to a freshly rebooted receiver, and no clock is needed. It costs one round trip at discovery. |
+| 4 | Discovery by mDNS browse; `net` hint in TXT | mDNS is multicast, the very thing the draft calls unreliable on Wi-Fi. Browsing is clunky on ESP-IDF and needs `zeroconf` in Python. The `net` TXT record lets anyone group devices by network. Wrong-key devices still "appear". | **Authenticated broadcast `Hello`** every 5 s, plus optional static peers for routed networks. Wrong-key devices see only noise, and the protocol surface is smaller. mDNS is kept only as an advertisement for HA's zeroconf discovery. |
+| 5 | No room for a key id ("leave a byte free" was an open question) | Changing the header later breaks compatibility. | The header has a 2-byte **`key_id`**, which drops foreign traffic cheaply and allows key rotation later. The header is still 20 bytes; the magic number was dropped in its favour. |
+| 6 | TalkStart sent 3×; receivers dedupe; it carries `unix_ms` | If all three are lost, should the audio play? The draft didn't say. | Audio packets are **self-describing**. TalkStart/TalkStop are informational only (UI, LEDs, HA events). |
+| 7 | The jitter buffer key wasn't specified | The header `seq` also counts packets to *other* peers, so seq gaps don't mean loss. | The jitter buffer orders frames by payload **`ts`** (48 kHz ticks) and never by `seq`. |
+| 8 | Unicast fan-out: one copy per peer | Not wrong, but each copy would be sealed separately. | **Seal once, send N identical copies** (same nonce, same plaintext). |
+| 9 | 10 ms frames everywhere | On Wi-Fi that is 100 packets/s per peer, each with about 72 bytes of overhead, so airtime grows with the number of peers. | 10 ms by default. 20 ms is allowed, and every receiver accepts 10 to 60 ms frames (the length comes from the Opus packet). |
+| 10 | protobuf + nanopb codegen | A code generator in the firmware build for five tiny messages. Generated Python code is tied to the protobuf runtime version, which HA pins. | `spec/lanicom.proto` stays the normative schema. **Hand-coded** codecs in C and Python are tested against the official protobuf runtime (2000 random messages, plus fuzzing). |
+| 11 | HA gets talk events (TalkStart) | HA doesn't play audio, so it never receives TalkStart: those only go to audio recipients. | A **`MONITOR`** capability bit. Talk metadata goes to every monitor as well; audio doesn't. |
+| 12 | 1 PTT button | The front plate has **four room buttons** (PROJECT_NOTES.md). | Targets are `all`, `zone:<z>` or `device:<id>`, and each button maps to one (see the YAML). |
+| 13 | ≤ 50 ms wired / ≤ 80 ms Wi-Fi p95 | Not reachable with stock ESPHome audio. Its I2S speaker preloads 5 × 10 ms of DMA (every write waits about 50 ms) and the mic reads in 16 ms blocks. See §4. | Measure first (milestone 7). An opt-in low-latency `i2s_audio` override is generated by `esphome/tools/make_lowlatency_i2s.py` (3 × 5 ms speaker DMA, 5 ms mic reads). The targets are revised in §4. |
+| 14 | Opus library: `esp_audio_codec` vs libopus (open question) | Already answered in this repo: micro-opus runs on the P4 (2.4 ms per 20 ms frame at complexity 1). | Use **`esphome/micro-opus`** (the registry version ESPHome uses). `opus_path:` can point at the vendored copy in `esp32-mumble/lib/micro-opus` instead. |
+| 15 | Python lib usable from HA | A custom integration can't depend on an unpublished package. | The library is vendored into the integration by `ha/sync_lib.py`, and CI checks that the copy is current. |
+| 16 | "Pulling a cable never affects others" | Discovery didn't say how dead peers go away. | Peers expire after 30 s of silence, or immediately on a clean `bye`, which is sent by unicast only. A broadcast `bye` would have re-created the departed peer as an unverified stranger; the C tests caught that. |
+
+Kept as in the draft: one UDP port, ChaCha20-Poly1305, a 20-byte header as
+AAD, Opus 16 kHz VOIP with in-band FEC and PLC, an adaptive jitter buffer
+(20 ms target, 60 ms ceiling), mixing of concurrent talkers, half-duplex
+operation, and multicast as an option for wired installs only.
+
+## 2. Architecture
+
+```
+  broadcast Hello (authenticated) ── discovery + liveness, challenge/echo verifies epochs
+                     │
+ ┌──────────┐  UDP 47100: [ver|type|key_id|sender|epoch|seq] + ChaCha20-Poly1305   ┌──────────┐
+ │ P4 board │ ◄────────────────────────────────────────────────────────────────► │ P4 board │
+ └──────────┘      CONTROL (protobuf: Hello, TalkStart, TalkStop) / AUDIO (Opus)  └──────────┘
+        ▲                                                                              ▲
+        └──── lanicom CLI (Linux/macOS) ──── Home Assistant (CAPTURE + MONITOR peer) ──┘
+```
+
+| Path | What |
+|---|---|
+| `spec/PROTOCOL.md`, `spec/lanicom.proto` | Normative protocol |
+| `spec/vectors/lanicom-v1.json` | Test vectors (keys, packets, invalid packets, control, replay), generated by `python/tools/gen_vectors.py` from independent primitives |
+| `lanicom-core/` | Portable C99 protocol engine: crypto (mbedTLS), packets, replay window, control codec, jitter buffer, mixer, peer table and verification. No sockets or clocks. Host tests run under ASan/UBSan. It is also an ESP-IDF component. |
+| `esphome/components/lanicom/` | ESPHome glue: lwIP socket task, audio task (Opus, mic → frames, mixer → speaker), I2S bus arbitration, actions and triggers |
+| `esphome/lanicom-p4.yaml` | Waveshare P4 board config |
+| `python/` | Reference implementation (asyncio) and `lanicom` CLI: `keygen`, `list`, `listen`, `talk`, `record`, `send` |
+| `ha/custom_components/lanicom/` | HA integration: config flow, per-device entities, `lanicom.announce`, talk events |
+
+## 3. Security model
+
+- **Assets:** the audio, and the ability to make a device speak.
+- **Attacker:** anyone on the LAN without the key. They see sender ids, timing
+  and sizes, but can't decrypt, inject, replay (§1 #3) or even appear in the
+  peer table.
+- **Not covered (v1):** a key holder can impersonate any device; there are no
+  per-device identities. Mitigation for later: Noise-IK handshakes with
+  per-device static keys.
+- **Management plane:** the ESPHome API, the web page and OTA are what an attacker would
+  go after. With them, anyone on the LAN could set their own network key and switch
+  "Talk" on, turning the box into a room bug. The board YAML therefore requires API
+  encryption, web auth and an OTA password (`secrets.yaml`).
+- **Key handling:** keys are 125-bit random strings (`lanicom keygen`, optional
+  QR), stretched with PBKDF2 (100k iterations). The key sits in ESPHome
+  preferences (flash) and isn't encrypted unless flash encryption is enabled.
+  Anyone with physical access to a board can extract it.
+
+## 4. Latency budget (mouth to ear, one hop, wired)
+
+| Stage | Stock ESPHome | `make_lowlatency_i2s.py` | Notes |
+|---|---|---|---|
+| Mic DMA read block | 16 | 5 | `READ_DURATION_MS` |
+| Fill one frame | 10 | 10 | 20 ms frames add 10 |
+| Opus lookahead (SILK, 16 kHz) | ~5 | ~5 | |
+| Encode (P4, complexity 3) | ~2 | ~2 | measured 2.4 ms / 20 ms at c1 |
+| Network (wired / Wi-Fi) | <1 / 2–10 | <1 / 2–10 | |
+| Jitter buffer target | 20 | 20 (10 on wired) | adapts up to 60 |
+| Playout tick alignment + prime | ~5 + 10 | ~5 + 10 | could be paced by DMA events instead |
+| Speaker ring + DMA | ~50 | ~15 | stock: 5 × 10 ms preloaded |
+| **Total (estimate)** | **~120** | **~70 (~60 with a 10 ms jitter target)** | |
+
+Measured on a host (loopback, `pytest lanicom/python -s`): crypto plus network
+takes 0.3 ms p50, and send-to-playout takes 20 ms, which equals the jitter
+target. The device stages above are estimates until milestone 7.
+
+**Revised targets:** stock ≤ 130 ms p95, low-latency I2S ≤ 75 ms p95 (wired).
+Wi-Fi gets +20 ms. Getting to ≤ 50 ms would also need playout paced by the
+I2S DMA events and a 10 ms jitter target. That is feasible, but only after
+the measurements. For reference, ITU-T G.114 puts one-way delay below 150 ms
+as fine for conversation.
+
+## 5. Milestones and status
+
+| # | Milestone | Status |
+|---|---|---|
+| 1 | Spec, proto, vectors | **Done.** PROTOCOL.md, lanicom.proto, 3 keys, 4 packets, 9 invalid packets, 9 control and 4 replay vectors. |
+| 2 | C core with host tests | **Done.** 261 checks under ASan/UBSan: vectors, codec fuzzing, jitter, mixer, and engines on an in-memory LAN (discovery, zones, wrong key, expiry, replay after restart, id collision, multicast, monitor). It cross-compiles for the P4 with `-Werror` against ESP-IDF 5.5.5. |
+| 3 | Python library and CLI | **Done.** 35 tests: vectors, protobuf cross-check, real-UDP nodes on 127.0.0.x, a loopback latency test, Python↔C interop through `lanicom_tool`, and a CLI send→record end-to-end test. |
+| 4 | Firmware bring-up | **Code written; needs the board.** The component compiles (checked with the RISC-V toolchain and generated `sdkconfig.h`), and the YAML validates and generates. A full `esphome compile` couldn't run in the build sandbox (the ESP-IDF component registry is blocked there); CI does it. |
+| 5 | Firmware networking | **Needs the board.** Talk with the Linux CLI over Ethernet, then over Wi-Fi (`esp32_hosted` via the C6; not configured yet). |
+| 6 | Provisioning | **Done (ESPHome web page + `keygen --qr`); needs the board.** |
+| 7 | Latency validation | **Needs the board.** Click test: `tools/voicetest/speak.py` plays a click, then compare `lanicom record` against an external recorder at the far speaker. Do it with and without the low-latency I2S override. |
+| 8 | HA integration | **Done.** Two tests in the real HA test harness: config flow, entities, monitor events, and `announce` through ffmpeg + libopus to a peer. |
+| 9 | Docs for friends | **Done:** `docs/friends.md`. |
+
+## 6. Open questions
+
+- **I2S bus switching:** the mic and the speaker share one I2S bus (as with Mumble), so
+  the speaker restarts after every talk. `speaker_hold` (3 s) keeps it running for
+  replies. Measure the switch time. A full-duplex I2S setup (separate TX/RX
+  channels on one port) would remove it and allow echo cancellation later.
+- **Wi-Fi on the P4:** go through the C6 with `esp32_hosted`. Check broadcast and
+  WMM voice priority (DSCP EF is already set on the socket).
+- **Jitter target on Wi-Fi:** start at 20 ms adaptive, then check the late-packet
+  statistics (`get_stats()`).
+- **Key rotation:** `key_id` makes it possible. Accept two keys for a while,
+  then send with the new one.
+- **Receive into HA** (forward a stream to a media player): deferred. It needs
+  `PLAYBACK` on HA, plus a PCM-to-HTTP bridge.
+- **Echo/feedback:** while half duplex is used, an open mic near another
+  device's speaker is the main risk.

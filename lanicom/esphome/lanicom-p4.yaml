@@ -1,0 +1,318 @@
+# lanicom on the Waveshare ESP32-P4-WIFI6-POE-ETH: serverless LAN intercom.
+# No Mumble server, no Home Assistant needed (HA can adopt it, and can join as a peer).
+#
+# Hardware bring-up (pins, ES8311 mic quirks, gains) is the same as
+# esp32-mumble/esphome/waveshare-esp32-p4-poe.yaml; see PROJECT_NOTES.md.
+#
+# First: cp secrets.example.yaml secrets.yaml and fill it in.
+# First flash over USB-C:   esphome run lanicom-p4.yaml
+# Then open http://<device>.local/ (user admin) and paste the network key (`lanicom keygen`),
+# or bake it in with:       esphome -s network_key 'xxxxx-...' run lanicom-p4.yaml
+
+substitutions:
+  name: lanicom-p4
+  friendly_name: Intercom
+  # PTT button between this header pin and GND. GPIO35 (BOOT) is Ethernet TXD1 on this board.
+  ptt_pin: GPIO22
+  # What the PTT button talks to: all | zone:<name> | device:<id>
+  ptt_target: all
+  zones: ""
+  network_key: ""
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: true
+  min_version: "2026.7.0"
+  on_boot:
+    - priority: -100
+      then:
+        # ES8311 mic gain, straight to the codec (ESPHome's es8311 can't change it at runtime).
+        - lambda: |-
+            id(es8311_dac).write_byte(0x14, 0x10 | (uint8_t)(id(mic_pga).state / 3));
+            id(es8311_dac).write_byte(0x16, (uint8_t)(id(mic_digital).state / 6));
+        - speaker.volume_set:
+            id: p4_speaker
+            volume: !lambda 'return id(speaker_volume).state / 100.0f;'
+
+esp32:
+  board: esp32-p4_r3  # rev3 silicon; pre-rev3 boards need `engineering_sample: true`
+  flash_size: 16MB
+  cpu_frequency: 360MHz
+  framework:
+    type: esp-idf  # ESPHome's native ESP-IDF toolchain (PlatformIO's can't link rev3 P4 builds)
+    advanced:
+      compiler_optimization: SIZE
+
+psram:
+
+ethernet:
+  type: IP101
+  mdc_pin: GPIO31
+  mdio_pin: GPIO52
+  power_pin: GPIO51
+  clk:
+    mode: CLK_EXT_IN
+    pin: GPIO50
+  phy_addr: 1
+
+logger:
+  hardware_uart: UART0  # USB-C is a CH343 UART bridge
+
+# Management (HA API, web page, OTA) must be authenticated: whoever can change the network
+# key and switch "Talk" on can turn the box into a room bug. Copy secrets.example.yaml
+# to secrets.yaml and fill it in.
+#
+# Optional Home Assistant link. reboot_timeout 0: without HA the device must not reboot.
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# Settings page for people without Home Assistant: http://<name>.local/
+web_server:
+  port: 80
+  version: 3
+  auth:
+    username: admin
+    password: !secret web_password
+
+mdns:
+  services:
+    - service: "_lanicom"
+      protocol: "_udp"
+      port: 47100
+      txt:
+        v: "1"
+
+external_components:
+  - source:
+      type: local
+      path: components
+  # Low-latency I2S: stock ESPHome queues ~50 ms on the speaker and reads the mic in 16 ms
+  # blocks. Run `python tools/make_lowlatency_i2s.py` (with ESPHome's Python), then uncomment
+  # to override the built-in i2s_audio (saves ~45 ms; check for audio glitches).
+  # - source:
+  #     type: local
+  #     path: lowlatency/components
+  #   components: [i2s_audio]
+
+i2c:
+  sda: GPIO7
+  scl: GPIO8
+
+i2s_audio:
+  - id: i2s_audio_bus
+    i2s_lrclk_pin: GPIO10
+    i2s_bclk_pin: GPIO12
+    i2s_mclk_pin: GPIO13
+
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    # Leave use_microphone off: in ESPHome's es8311 driver it selects a PDM digital mic.
+    mic_gain: 0DB  # overridden at boot by "Mic Digital Gain"
+
+microphone:
+  - platform: i2s_audio
+    id: p4_mic
+    i2s_audio_id: i2s_audio_bus
+    i2s_din_pin: GPIO11
+    adc_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+    correct_dc_offset: true
+
+speaker:
+  - platform: i2s_audio
+    id: p4_speaker
+    i2s_audio_id: i2s_audio_bus
+    i2s_dout_pin: GPIO9
+    dac_type: external
+    audio_dac: es8311_dac
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+    # lanicom paces its writes itself; a small ring buffer bounds the worst case.
+    buffer_duration: 60ms
+    timeout: never
+
+lanicom:
+  id: intercom
+  microphone: p4_mic
+  speaker: p4_speaker
+  key: ${network_key}
+  key_text_id: network_key_text
+  name_text_id: intercom_name
+  zones: ${zones}
+  zones_text_id: intercom_zones
+  jitter_buffer: 20ms
+  jitter_buffer_max: 60ms
+  frame_duration: 10ms
+  bitrate: 24000
+  complexity: 3
+  mic_warmup: 50ms  # the ES8311 settles fast
+  on_receive_start:
+    - logger.log:
+        format: "%s is talking"
+        args: [name.c_str()]
+
+text:
+  - platform: template
+    id: network_key_text
+    name: "Network key"
+    icon: "mdi:key"
+    entity_category: config
+    mode: password
+    optimistic: true
+    restore_value: true
+    initial_value: ""
+    max_length: 64
+  - platform: template
+    id: intercom_name
+    name: "Intercom name"
+    entity_category: config
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: ""  # empty: the device's friendly name
+    max_length: 32
+  - platform: template
+    id: intercom_zones
+    name: "Intercom zones"
+    icon: "mdi:home-group"
+    entity_category: config
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: ${zones}
+    max_length: 100
+
+binary_sensor:
+  - platform: gpio
+    id: ptt_button
+    name: "PTT"
+    pin:
+      number: ${ptt_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
+    on_press:
+      - lanicom.start_talking:
+          target: ${ptt_target}
+    on_release:
+      - lanicom.stop_talking:
+  # Four room buttons (the brass front plate) would look like this:
+  #  - platform: gpio
+  #    pin: { number: GPIO20, mode: INPUT_PULLUP, inverted: true }
+  #    on_press: { lanicom.start_talking: { target: "zone:workshop" } }
+  #    on_release: { lanicom.stop_talking: }
+  - platform: template
+    name: "Receiving"
+    icon: "mdi:account-voice"
+    lambda: 'return id(intercom).is_receiving();'
+  - platform: template
+    name: "Talking"
+    icon: "mdi:microphone"
+    lambda: 'return id(intercom).is_transmitting();'
+
+sensor:
+  - platform: template
+    name: "Intercom peers"
+    icon: "mdi:lan"
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: 'return id(intercom).peer_count();'
+  - platform: template
+    name: "Dropped packets"
+    icon: "mdi:shield-alert"
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 30s
+    lambda: |-
+      auto s = id(intercom).get_stats();
+      return s.foreign + s.auth + s.replay + s.malformed + s.unverified;
+
+text_sensor:
+  - platform: template
+    name: "Intercom peer list"
+    icon: "mdi:format-list-bulleted"
+    update_interval: 10s
+    lambda: 'return id(intercom).peers_summary();'
+  - platform: ethernet_info
+    ip_address:
+      name: IP Address
+
+number:
+  # REG14: analog mic PGA (0-30 dB, 3 dB steps); REG16: ADC digital gain (0-42 dB, 6 dB steps).
+  - platform: template
+    name: "Mic Preamp"
+    id: mic_pga
+    entity_category: config
+    unit_of_measurement: "dB"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 30
+    step: 3
+    initial_value: 30
+    set_action:
+      - lambda: 'id(es8311_dac).write_byte(0x14, 0x10 | (uint8_t)(x / 3));'
+  - platform: template
+    name: "Mic Digital Gain"
+    id: mic_digital
+    entity_category: config
+    unit_of_measurement: "dB"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 42
+    step: 6
+    initial_value: 24  # best with tools/voicetest (2026-10-03)
+    set_action:
+      - lambda: 'id(es8311_dac).write_byte(0x16, (uint8_t)(x / 6));'
+  - platform: template
+    name: "Speaker Volume"
+    id: speaker_volume
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 100
+    step: 5
+    initial_value: 65
+    set_action:
+      - speaker.volume_set:
+          id: p4_speaker
+          volume: !lambda 'return x / 100.0;'
+
+switch:
+  - platform: gpio
+    name: "Speaker Power"
+    icon: "mdi:speaker"
+    pin: GPIO53  # PA_Ctrl
+    restore_mode: RESTORE_DEFAULT_ON
+    entity_category: config
+  - platform: template
+    name: "Talk"
+    icon: "mdi:account-voice"
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - lanicom.start_talking:
+          target: ${ptt_target}
+    on_turn_off:
+      - lanicom.stop_talking:
+
+button:
+  - platform: restart
+    name: "Restart"
+    entity_category: diagnostic

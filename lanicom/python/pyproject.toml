@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lanicom"
+version = "0.1.0"
+description = "Serverless LAN push-to-talk intercom: protocol library and CLI peer"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["cryptography>=41"]
+
+[project.optional-dependencies]
+audio = ["sounddevice>=0.4"]
+qr = ["qrcode>=7"]
+test = ["pytest>=8", "pytest-asyncio>=0.23", "protobuf>=4", "grpcio-tools>=1.60"]
+
+[project.scripts]
+lanicom = "lanicom.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

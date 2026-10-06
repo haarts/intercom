@@ -1,0 +1,20 @@
+announce:
+  fields:
+    target:
+      example: "zone:kids"
+      default: "all"
+      selector:
+        text:
+    media:
+      required: true
+      example: "media-source://tts/tts.google_translate_en_com?message=Dinner%20is%20ready"
+      selector:
+        text:
+    bitrate:
+      default: 24000
+      selector:
+        number:
+          min: 6000
+          max: 64000
+          step: 1000
+          unit_of_measurement: "bit/s"

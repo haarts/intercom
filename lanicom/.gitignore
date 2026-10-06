@@ -1,0 +1,4 @@
+lanicom-core/build/
+__pycache__/
+*.egg-info/
+.pytest_cache/

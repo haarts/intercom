@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Join a lanicom intercom network",
+        "description": "Home Assistant joins the intercom as a peer. Use the same network key as the devices (create one with `lanicom keygen`).",
+        "data": {
+          "key": "Network key",
+          "name": "Name shown to the other devices",
+          "zones": "Zones (comma-separated, optional)"
+        }
+      }
+    },
+    "error": {
+      "key_too_short": "The key is too short; use the key the devices have.",
+      "bad_zones": "At most 8 zones of at most 16 characters."
+    },
+    "abort": {
+      "already_configured": "This intercom network is already set up."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "talking": { "name": "Talking" }
+    },
+    "sensor": {
+      "rtt": { "name": "Round trip" },
+      "last_seen": { "name": "Last seen" }
+    }
+  },
+  "services": {
+    "announce": {
+      "name": "Announce",
+      "description": "Play an audio file, URL or text-to-speech message on intercom devices.",
+      "fields": {
+        "target": { "name": "Target", "description": "all, zone:<name>, device:<id> or a device name." },
+        "media": { "name": "Media", "description": "A URL or media-source ID (including TTS)." },
+        "bitrate": { "name": "Bitrate", "description": "Opus bitrate." }
+      }
+    }
+  }
+}

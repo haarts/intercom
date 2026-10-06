@@ -18,6 +18,9 @@ buttons** (3 children's rooms, 1 workshop), each with an LED ring.
    and Grandstream PoE paging speakers (GSC3506).
 2. **Sep 2026: ESP32 + Mumble route (current).** ESP32-P4 boxes running a Mumble
    client, one Mumble server for the house, with Mumble channels used to route to rooms.
+3. **Oct 2026: serverless route, lanicom (in progress).** No server, no HA dependency, so
+   friends can use it. Boxes discover each other by authenticated broadcast and send Opus
+   by encrypted unicast. Same board and ESPHome stack. See `lanicom/PLAN.md`.
 
 ## Decisions made
 
@@ -128,4 +131,9 @@ The two copies in Downloads are identical. The file is 180 × 90 mm, with layers
 - [ ] Upstream PR https://github.com/dchote/esp32-mumble/pull/2 (branch `p4-support` on haarts/esp32-mumble,
       worktree /home/harm/prj/esp32-mumble-pr): P4 support, sequence fix, VAD. `esp32-mumble/` here is a git
       subtree identical to that branch; after merge, `git subtree pull --prefix=esp32-mumble <upstream> main`.
+- [ ] lanicom (2026-10-06): spec, C core, Python CLI and HA integration done and tested off-device.
+      Still to do on the board: flash `lanicom/esphome/lanicom-p4.yaml`, talk with `lanicom talk` on a laptop,
+      and measure latency with and without `tools/make_lowlatency_i2s.py`. Stock ESPHome I2S queues about 50 ms
+      on the speaker (5 × 10 ms DMA, preloaded), so expect about 120 ms mouth-to-ear on stock and about 70 ms
+      with the override.
 - [ ] In HA: remove the old `intercom-p4-bringup` device, adopt `esp32-mumble-p4-e80332` (no API encryption yet).
