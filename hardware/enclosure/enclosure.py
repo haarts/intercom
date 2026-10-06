@@ -7,8 +7,10 @@ Coordinates (mm), looking at the front: X right (0..180 = plate width), Y up
 
 Parts:
 - shell: open at the front, the brass plate sits in a rebate flush with the front.
-  Inside: plate bosses (M3 heat-set inserts), board standoffs (M2.5 inserts), a
+  Inside: plate bosses (M3 heat-set inserts), carrier standoffs (M3 inserts), a
   closed chamber behind the speaker, bottom vents, a cable opening in the back.
+- mic_tube: optional, glued to the back of the plate; leads sound from a grille
+  opening to the P4's mic.
 - wall_plate: screws onto the in-wall box (60 mm screw spacing, horizontal or
   vertical). The shell hooks onto its top lugs and is fixed with two M3 screws
   from below.
@@ -38,19 +40,43 @@ OUTER_H = PLATE_H + 2 * (WALL + REBATE_GAP)
 DEPTH = PLATE_T + INNER_DEPTH + BACK
 Z_BACK = PLATE_T + INNER_DEPTH  # inner face of the back wall
 
-# Heat-set inserts: M3 (plate, wall plate), M2.5 (board). Hole = insert's recommended hole.
+# Heat-set inserts: M3 (plate, carrier, wall plate). Hole = insert's recommended hole.
 M3_INSERT_D, M3_INSERT_L = 4.0, 5.7
-M25_INSERT_D, M25_INSERT_L = 3.5, 5.0
 BOSS_D = 8.0
 BOSS_L = 12.0  # plate bosses reach this far behind the plate
 
-# --- board: Waveshare ESP32-P4-WIFI6-POE-ETH, 68 x 55, holes 33 x 48 ---
-# Placed component side to the front, Ethernet jack facing -X (towards the cable).
-BOARD_X0, BOARD_Y0 = 104.0, 25.0  # board corner (jack end, bottom)
-BOARD_L, BOARD_W = 68.0, 55.0
-BOARD_HOLES = [(BOARD_X0 + 2 + x, BOARD_Y0 + y) for x in (24.3, 57.3) for y in (3.5, 51.5)]
-STANDOFF_H = 7.0  # underside parts reach 4.9 mm
-MIC_XY = (BOARD_X0 + 2 + 51.8, BOARD_Y0 + 51.7)  # MIC1 from the STEP model
+# --- electronics: carrier board (../carrier) with the Waveshare ESP32-P4-ETH on it ---
+# The carrier lies on standoffs against the back wall, components (and the P4) facing the
+# plate. Seen from the front it reads like KiCad's top view: RJ45 end left, JSTs at the
+# bottom (towards the buttons).
+CARRIER_X0, CARRIER_Y0 = 86.0, 27.0  # box position of the carrier's lower left corner
+CARRIER_L, CARRIER_W, PCB_T = 90.0, 48.0, 1.6
+STANDOFF_H = 5.0  # through-hole leads stick out ~2 mm under the carrier
+
+
+def carrier_xy(x, y):
+    """KiCad board coordinates (outline 100..190 x 100..148) -> box X/Y."""
+    return CARRIER_X0 + (x - 100.0), CARRIER_Y0 + (148.0 - y)
+
+
+CARRIER_HOLES = [carrier_xy(x, y) for x, y in ((103, 103.5), (187.2, 121), (121.85, 144.3), (166.25, 144.3))]
+Z_CARRIER = Z_BACK - STANDOFF_H - PCB_T  # carrier's component side
+SOCKET_H = 8.5  # 1x20 female sockets
+Z_P4 = Z_CARRIER - SOCKET_H - PCB_T  # P4's component side
+CARRIER_PARTS_H = 16.0  # JST-XH with its plug; C5 is 11.5
+
+
+def p4_xy(mx, my):
+    """P4 STEP-model coordinates (x across 0..21, y along 0..78, RJ45 at y=0) -> box X/Y."""
+    return 92.0 + my, 73.0 - mx
+
+
+MIC_XY = p4_xy(4.0, 73.25)  # MIC1, on the P4's component side
+RJ45_H = 13.3
+POE_H = 13.0  # PoE module (B) on the 6-pin header: socket ~9 mm, then its PCB and parts
+POE_Y = (20.0, 52.0)  # along the P4
+POE_W = 26.0  # slightly wider than the P4
+RJ45_PLUG_L = 22.0  # plug plus the cable's bend, in front of the jack
 
 # --- speaker: 40 x 40 x 18, in a closed chamber ---
 SPK = 40.0
@@ -58,19 +84,20 @@ SPK_CENTER = (40.0, 54.0)
 CHAMBER_WALL = 2.0
 
 # --- cable and wall plate ---
-CABLE_HOLE = (66, 30, 100, 72)  # x0, y0, x1, y1 in the back wall
+CABLE_HOLE = (65, 35, 84, 72)  # x0, y0, x1, y1 in the back wall, beside the RJ45 jack
 WP_T = 3.0
 WP_MARGIN = 3.0  # wall plate is this much smaller than the shell's inner outline
-WALLBOX_CENTER = (83.0, 51.0)  # in-wall box centre behind the shell (adjust to taste)
+WALLBOX_CENTER = (74.0, 53.0)  # in-wall box centre behind the shell (adjust to taste)
 WALLBOX_SCREWS = 60.0
+SCREW_HEAD = (9.0, 2.2)  # wall box screw heads: diameter, height (recessed into the shell's back)
 SLIDE = 5.0  # the shell is hung on, then slid down this far
-HOOK_X = (75.0, 97.0)  # top hooks: between the speaker chamber and the board
+HOOK_X = (100.0, 160.0)  # top hooks: above the carrier
 HOOK_Y = 80.0
 TAB_X = (58.0, 122.0)  # bottom tabs + screws: in the gaps between the buttons
 
 # --- vents (bottom face) ---
 VENT_L, VENT_W, VENT_PITCH = 30.0, 2.5, 6.0
-VENT_X = (95.0, 170.0)  # under the board
+VENT_X = (86.0, 176.0)  # below the carrier
 
 
 def _box(x, y, z, dx, dy, dz):
@@ -92,11 +119,11 @@ def shell():
         s = s.union(boss).union(web)
         s = s.cut(cq.Workplane("XY").circle(M3_INSERT_D / 2).extrude(M3_INSERT_L).translate((x, y, PLATE_T)))
 
-    # Board standoffs on the back wall.
-    for x, y in BOARD_HOLES:
+    # Carrier standoffs on the back wall, M3 inserts.
+    for x, y in CARRIER_HOLES:
         so = cq.Workplane("XY").circle(3.5).extrude(STANDOFF_H).translate((x, y, Z_BACK - STANDOFF_H))
         s = s.union(so)
-        s = s.cut(cq.Workplane("XY").circle(M25_INSERT_D / 2).extrude(M25_INSERT_L).translate((x, y, Z_BACK - STANDOFF_H)))
+        s = s.cut(cq.Workplane("XY").circle(M3_INSERT_D / 2).extrude(M3_INSERT_L).translate((x, y, Z_BACK - STANDOFF_H)))
 
     # Speaker chamber: walls from the back wall to the plate; the speaker sits at the front.
     cx, cy = SPK_CENTER
@@ -119,6 +146,12 @@ def shell():
     x0, y0, x1, y1 = CABLE_HOLE
     s = s.cut(cq.Workplane("XY").box(x1 - x0, y1 - y0, BACK + 2, centered=False).translate((x0, y0, Z_BACK - 1)))
 
+    # Recesses in the back for the wall box screw heads (the shell slides down SLIDE mm over them).
+    cx, cy = WALLBOX_CENTER
+    half = WALLBOX_SCREWS / 2
+    for sx, sy in ((cx - half, cy), (cx + half, cy), (cx, cy - half), (cx, cy + half)):
+        d = SCREW_HEAD[0] + 5  # slot travel in the wall plate, plus clearance
+        s = s.cut(_box(sx - d / 2, sy - d / 2, DEPTH - SCREW_HEAD[1], d, d + SLIDE, SCREW_HEAD[1] + 1))
     # Slots for the wall plate's hooks (top) and tabs (bottom); see wall_plate().
     for hx in HOOK_X:
         s = s.cut(_box(hx - 7, HOOK_Y - SLIDE - 0.3, Z_BACK - 1, 14, 3 + SLIDE + 0.6, BACK + 2))
@@ -172,18 +205,43 @@ def plate_dummy():
     return p
 
 
+def mic_tube():
+    """Tube from the back of the plate to just in front of the mic (stops clear of the USB-C).
+
+    Glue it behind a grille opening; a foam ring closes the last gap to the P4."""
+    x, y = MIC_XY
+    length = (Z_P4 - 3.6) - PLATE_T
+    t = cq.Workplane("XY").circle(3.0).circle(1.5).extrude(length)
+    t = t.union(cq.Workplane("XY").circle(5.0).circle(1.5).extrude(1.2))  # glue flange
+    return t.translate((x, y, PLATE_T))
+
+
 def keep_outs():
     """Parts that live in the box, as simple blocks, to check for collisions."""
     items = {}
-    zpcb = Z_BACK - STANDOFF_H  # PCB underside
-    items["board"] = cq.Workplane("XY").box(BOARD_L + 2, BOARD_W, 1.6, centered=False).translate((BOARD_X0, BOARD_Y0, zpcb - 1.6))
-    items["board_parts"] = cq.Workplane("XY").box(BOARD_L + 2, BOARD_W, 16, centered=False).translate((BOARD_X0, BOARD_Y0, zpcb - 1.6 - 16))
-    # Carrier on the header: header at the far end of the board, ~30 mm tall stack incl. plugs.
-    items["carrier"] = cq.Workplane("XY").box(14, 55, 30, centered=False).translate((BOARD_X0 + 58, BOARD_Y0, zpcb - 1.6 - 30))
+    zc = Z_CARRIER
+    cx, cy = carrier_xy(100, 148)
+    items["carrier"] = _box(cx, cy, zc, CARRIER_L, CARRIER_W, PCB_T)
+    # Tall carrier parts: the channel strip below the P4 (JSTs with plugs, C5, transistors).
+    items["carrier_parts"] = _box(cx, cy, zc - CARRIER_PARTS_H, CARRIER_L, 22.0, CARRIER_PARTS_H)
+    items["sockets"] = _box(*p4_xy(21, 0), zc - SOCKET_H, 78, 21, SOCKET_H)
+    x0, y0 = p4_xy(21, 0)
+    items["p4"] = _box(x0, y0, Z_P4, 78, 21, PCB_T)
+    items["p4_parts"] = _box(x0, y0, Z_P4 - 4.1, 70, 21, 4.1)  # top-side parts; the FPC connector is 4.1
+    items["p4_usb_end"] = _box(x0 + 70, y0, Z_P4 - 3.2, 9.4, 21, 3.2)  # mic, USB-C (3.2)
+    rx, ry = p4_xy(18.5, -0.9)
+    items["rj45"] = _box(rx, ry, Z_P4 - RJ45_H, 21.5, 16, RJ45_H)
+    items["rj45_plug"] = _box(rx - RJ45_PLUG_L, ry, Z_P4 - RJ45_H, RJ45_PLUG_L, 16, RJ45_H)
+    px, py = p4_xy(10.5 + POE_W / 2, POE_Y[0])
+    items["poe"] = _box(px, py, Z_P4 - POE_H, POE_Y[1] - POE_Y[0], POE_W, POE_H)
     items["speaker"] = cq.Workplane("XY").box(SPK, SPK, 18, centered=False).translate((SPK_CENTER[0] - SPK / 2, SPK_CENTER[1] - SPK / 2, PLATE_T + 0.5))
     for i, x in enumerate(BUTTONS_X):
         items[f"button{i + 1}"] = cq.Workplane("XY").circle(9.5).extrude(43).translate((x, BUTTON_Y, PLATE_T))
+    items["mic_tube"] = mic_tube()
     return items
+
+
+STACK = {"carrier", "carrier_parts", "sockets", "p4", "p4_parts", "p4_usb_end", "rj45", "rj45_plug", "poe"}
 
 
 def check_collisions(sh):
@@ -194,7 +252,7 @@ def check_collisions(sh):
         if items[a].intersect(sh).val().Volume() > 1.0:
             problems.append(f"{a} hits the shell")
         for b in names[i + 1:]:
-            if {a, b} <= {"board", "board_parts", "carrier"}:
+            if {a, b} <= STACK:
                 continue
             if items[a].intersect(items[b]).val().Volume() > 1.0:
                 problems.append(f"{a} hits {b}")
@@ -206,11 +264,15 @@ def main():
     sh, wp = shell(), wall_plate()
     cq.exporters.export(sh, str(OUT / "shell.stl"), tolerance=0.05, angularTolerance=0.1)
     cq.exporters.export(wp, str(OUT / "wall_plate.stl"), tolerance=0.05, angularTolerance=0.1)
+    cq.exporters.export(mic_tube(), str(OUT / "mic_tube.stl"), tolerance=0.05, angularTolerance=0.1)
     asm = cq.Assembly()
     asm.add(sh, name="shell", color=cq.Color(0.55, 0.4, 0.25))
     asm.add(wp, name="wall_plate", color=cq.Color(0.6, 0.6, 0.6))
     asm.add(plate_dummy(), name="plate", color=cq.Color(0.8, 0.65, 0.2))
     for name, part in keep_outs().items():
+        if name == "mic_tube":
+            asm.add(part, name=name, color=cq.Color(0.3, 0.3, 0.3))
+            continue
         asm.add(part, name=name, color=cq.Color(0.2, 0.5, 0.8, 0.6))
     asm.save(str(OUT / "assembly.step"))
     # Line-drawing previews: front (through the plate), back, and a section from the side.
@@ -222,6 +284,7 @@ def main():
     problems = check_collisions(sh)
     bb = sh.val().BoundingBox()
     print(f"shell {bb.xlen:.1f} x {bb.ylen:.1f} x {bb.zlen:.1f} mm; wall plate {wp.val().BoundingBox().xlen:.1f} x {wp.val().BoundingBox().ylen:.1f} mm")
+    print(f"carrier at z {Z_CARRIER:.1f}, P4 top at z {Z_P4:.1f}: mic {Z_P4 - PLATE_T:.1f} mm behind the plate at {MIC_XY}")
     print("collisions:", problems or "none")
 
 

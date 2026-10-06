@@ -7,7 +7,7 @@ plate. The box sits on the in-wall box the UTP comes out of, with its back again
 | Path | What | Status |
 |---|---|---|
 | `plate/front-plate-arches.dxf` | Front plate for the laser cutter | Holes corrected (below). Grille pattern still to check with the cutter. |
-| `enclosure/enclosure.py` | Parametric CadQuery model of the 3D-printed prototype: shell and wall plate | First version, not printed yet |
+| `enclosure/enclosure.py` | Parametric CadQuery model of the 3D-printed prototype: shell, wall plate, mic tube | Second version (carrier + ESP32-P4-ETH), not printed yet |
 | `carrier/` | KiCad project for the button/LED carrier board | Rev A schematic and PCB done: ERC clean, DRC 0 errors / 0 unconnected. PDFs, BOM and gerbers in `carrier/export/`. |
 
 ## GPIO map (P4-ETH header P1, Pico-style numbering)
@@ -74,34 +74,47 @@ Still open:
 python enclosure/enclosure.py        # needs CadQuery (Python ≤ 3.13): pip install cadquery
 ```
 
-This writes `enclosure/out/shell.stl`, `wall_plate.stl`, `assembly.step` (with the plate, board,
-speaker and buttons as blocks), and SVG views. It also checks the parts for collisions.
+This writes `enclosure/out/shell.stl`, `wall_plate.stl`, `mic_tube.stl`, `assembly.step` (with the plate,
+the electronics, speaker and buttons as blocks), and SVG views. It also checks the parts for collisions.
 
 **Shell, 185.4 × 95.4 × 52 mm:**
 - **Plate:** sits in a rebate, flush with the front, and is screwed to four corner bosses with M3 heat-set inserts.
 - **Inside, from the left:**
   - the speaker in a closed chamber, which improves the low end; a ledge holds it against the plate;
-  - the cable opening;
-  - the board on four standoffs with M2.5 inserts, components facing the front and the Ethernet jack pointing at the cable.
-- **Bottom:** vent slots under the board. Warm air leaves through the grille.
+  - the cable opening, right next to the P4's RJ45 jack;
+  - the carrier on four 5 mm standoffs (M3 inserts) on the back wall, above the buttons, components towards the plate.
+- **The stack, from the back wall:**
+  - carrier (component side at 42.4 mm behind the front);
+  - 8.5 mm sockets;
+  - the ESP32-P4-ETH (component side at 32.3 mm);
+  - the RJ45 and the PoE module, which stick out about 13 mm towards the plate.
+
+  That leaves about 16 mm free behind the plate.
+- **Buttons:** the JSTs are on the carrier's bottom edge, a short cable away from them.
+- **Bottom:** vent slots under the carrier. Warm air leaves through the grille.
+- **USB-C:** it points at the right side wall with only 9 mm to spare. Flash the P4 before you mount it; after that, update it over the network (OTA).
 
 **Wall plate, 174 × 85 × 3 mm:**
-- **Mounting:** it screws onto the in-wall box. Slots fit 60 mm screw spacing, horizontal or vertical. Set `WALLBOX_CENTER` to where your wall box ends up behind the shell.
-- **Fixing the shell:** hang the shell on the two top hooks and slide it 5 mm down. Two M3 screws from below go into the wall plate's tabs.
+- **Mounting:** it screws onto the in-wall box.
+  - Slots fit 60 mm screw spacing, horizontal or vertical, around `WALLBOX_CENTER` (behind the cable opening by default).
+  - The shell's back has recesses for the screw heads.
+- **Fixing the shell:** hang the shell on the two top hooks (above the carrier) and slide it 5 mm down. Two M3 screws from below go into the wall plate's tabs.
 
 **Print settings:** PETG (or ASA near a heat source), 0.2 mm layers, 4 perimeters around the inserts.
 Print the shell with its back on the bed; the rebate and bosses need no supports.
 
 **Hardware per box:**
 - 4× M3 heat-set inserts + M3×8 countersunk screws for the plate;
+- 4× M3 inserts + M3×6 screws for the carrier;
 - 2× M3 inserts + M3×16 screws to fix the shell to the wall plate;
-- 4× M2.5 inserts + M2.5×6 screws for the board;
 - 2 screws for the wall box (usually supplied with it).
 
 ### To verify with the first print
-- **Mic:** it is on the board, about 36 mm behind the plate (`MIC_XY` in the script), and will sound muffled.
-  - Try a tube from the mic to the plate, a foam tube or a printed one, sealed at both ends.
-  - Check that it ends behind a grille opening, not a web. If needed, drill a small hole.
+- **Mic:** it is on the P4, next to the USB-C, 29 mm behind the plate (`MIC_XY` in the script), and will sound muffled without help.
+  - `mic_tube.stl` runs from the plate to 3.6 mm in front of the mic, clear of the USB-C. Glue its flange behind the plate and close the last gap with a foam ring.
+  - Check that the tube ends behind a grille opening, not a web. If needed, drill a small hole.
+- **PoE module:** modelled as a 32 × 26 × 13 mm block. Check the real height and overhang.
 - **Cable:** the RJ45 plug and the cable's bend between the jack and the cable opening. A slim patch cable helps.
 - **Speaker chamber:** check it is sealed, and add foam between the speaker and the plate.
 - **Button depth:** 46 mm inside depth assumes a 33 mm body plus its plug. Measure the real buttons.
+- **Button cables:** the JSTs are labelled BTN4, BTN1, BTN3, BTN2 from left to right; cut each cable to its button.
