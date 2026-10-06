@@ -93,6 +93,20 @@ Measured on a host (loopback, `pytest lanicom/python -s`): crypto plus network
 takes 0.3 ms p50, and send-to-playout takes 20 ms, which equals the jitter
 target. The device stages above are estimates until milestone 7.
 
+**Measured on the P4 (2026-10-06,** `tools/voicetest/clicktest.py`**):** the board's sending half,
+from a click at the laptop speaker next to the board to its packet back at the laptop
+over Wi-Fi. That covers mic DMA, frame, Opus and the network.
+
+| Build | Median per run | Spread within a run |
+|---|---|---|
+| Stock ESPHome I2S | 35.6, 33.8 ms | ~8 ms: two clusters, set by where a click falls in the 16 ms mic block |
+| `make_lowlatency_i2s.py` | 22.4, 27.0 ms | ~2 ms |
+
+This agrees with the estimates above: about 35 ms stock against ~34–38 estimated.
+Laptop-side timing (PipeWire) is uncertain by about ±5 ms. The voice test
+(`tools/voicetest/run-lanicom.sh`) gives 0% WER on both builds. The receiving half
+(jitter buffer and speaker DMA) is still unmeasured: the board has no speaker yet.
+
 **Revised targets:** stock ≤ 130 ms p95, low-latency I2S ≤ 75 ms p95 (wired).
 Wi-Fi gets +20 ms. Getting to ≤ 50 ms would also need playout paced by the
 I2S DMA events and a 10 ms jitter target. That is feasible, but only after
@@ -109,7 +123,7 @@ as fine for conversation.
 | 4 | Firmware bring-up | **Code written; needs the board.** `esphome compile lanicom-p4.yaml` builds (ESPHome 2026.7.1, ESP-IDF 5.5.5): RAM 20.7%, flash 11.7% (947 KB). The only warnings come from micro-opus. CI (`.github/workflows/lanicom.yml`) runs every test and the firmware build on each push. |
 | 5 | Firmware networking | **Needs the board.** Talk with the Linux CLI over Ethernet, then over Wi-Fi (`esp32_hosted` via the C6; not configured yet). |
 | 6 | Provisioning | **Done (ESPHome web page + `keygen --qr`); needs the board.** |
-| 7 | Latency validation | **Needs the board.** Click test: `tools/voicetest/speak.py` plays a click, then compare `lanicom record` against an external recorder at the far speaker. Do it with and without the low-latency I2S override. |
+| 7 | Latency validation | **Sending half done** (§4): ~34 ms stock, ~22–27 ms with the low-latency override. The receiving half needs a speaker on the board. |
 | 8 | HA integration | **Done.** Two tests in the real HA test harness: config flow, entities, monitor events, and `announce` through ffmpeg + libopus to a peer. |
 | 9 | Docs for friends | **Done:** `docs/friends.md`. |
 
