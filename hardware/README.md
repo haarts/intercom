@@ -1,6 +1,6 @@
 # Intercom hardware
 
-About ten wall boxes, each with a Waveshare ESP32-P4-WIFI6-POE-ETH, a 40 × 40 mm speaker, four
+About ten wall boxes, each with a Waveshare ESP32-P4-ETH (sku ESP32-P4-POE-ETH, PoE module on top; no WiFi), a 40 × 40 mm speaker, four
 illuminated push buttons (M19, Φ22 bezel, 3–6 V LED ring) and a 180 × 90 × 3 mm brass front
 plate. The box sits on the in-wall box the UTP comes out of, with its back against the wall.
 
@@ -8,50 +8,49 @@ plate. The box sits on the in-wall box the UTP comes out of, with its back again
 |---|---|---|
 | `plate/front-plate-arches.dxf` | Front plate for the laser cutter | Holes corrected (below). Grille pattern still to check with the cutter. |
 | `enclosure/enclosure.py` | Parametric CadQuery model of the 3D-printed prototype: shell and wall plate | First version, not printed yet |
-| `carrier/` | KiCad project for the button/LED carrier board | Schematic rev A done; ERC clean. PDF and BOM in `carrier/export/`. PCB layout still to do. |
+| `carrier/` | KiCad project for the button/LED carrier board | Rev A schematic and PCB done: ERC clean, DRC 0 errors / 0 unconnected. PDFs, BOM and gerbers in `carrier/export/`. |
 
-## GPIO map (header P6, numbering as in Waveshare's schematic)
+## GPIO map (P4-ETH header P1, Pico-style numbering)
 
-From [Waveshare's schematic](https://files.waveshare.com/wiki/ESP32-P4-WIFI6-POE-ETH/ESP32-P4-WIFI6-POE-ETH-Schematic.pdf).
-Check pin 1 on the board before trusting the numbers.
+Pin 1 is at the USB-C end of the left row, seen from the top with USB-C pointing up; pins 21–40 run back
+up the right row, from the RJ45 end. Source: Waveshare's [ESP32-P4-ETH](https://docs.waveshare.com/ESP32-P4-ETH) pinout.
 
-| Use | GPIO | Header pin |
-|---|---|---|
-| Button 1 (PTT) | GPIO22 | 11 |
-| Button 2 | GPIO20 | 14 |
-| Button 3 | GPIO21 | 12 |
-| Button 4 | GPIO23 | 8 |
-| LED ring 1 | GPIO32 | 25 |
-| LED ring 2 | GPIO33 | 30 |
-| LED ring 3 | GPIO4 | 17 |
-| LED ring 4 | GPIO5 | 15 |
-| Spare | GPIO2, GPIO3 | 22, 20 |
-| +5 V | | 1, 3 |
-| GND | | 5, 10, 13, 19, 26, 29, 33, 40 |
+| Use | GPIO | P1 pin | Carrier socket |
+|---|---|---|---|
+| Button 1 (PTT) | GPIO22 | 32 | J7.12 |
+| Button 2 | GPIO20 | 35 | J7.15 |
+| Button 3 | GPIO21 | 34 | J7.14 |
+| Button 4 | GPIO23 | 31 | J7.11 |
+| LED ring 1 | GPIO32 | 26 | J7.6 |
+| LED ring 2 | GPIO33 | 25 | J7.5 |
+| LED ring 3 | GPIO4 | 12 | J1.12 |
+| LED ring 4 | GPIO5 | 11 | J1.11 |
+| Spare | GPIO2, GPIO3 | 15, 14 | J1.15, J1.14 → J6 |
+| +5 V (VSYS) | | 39 | J7.19 |
+| GND | | 3, 8, 13, 18, 23, 28, 33, 38 | |
 
-Pins on the header that are **not** free:
+## Carrier board (`carrier/`)
 
-| Pins | Why |
-|---|---|
-| GPIO0, GPIO1 | 32.768 kHz crystal |
-| GPIO6 | 0 Ω to the ESP32-C6 (C6_IO2) |
-| GPIO54 | C6_CHIP_PU: switching it resets the C6 |
-| GPIO7, GPIO8 | I2C to the audio codec |
-| GPIO53 | Speaker amplifier enable |
-| GPIO24–27 | USB |
-| GPIO36–38 | Strapping pins; 37/38 are also the log UART |
-| GPIO45–48 | SD-card power domain (usable, but avoided) |
+90 × 48 mm, two layers, through-hole only so it can be hand-soldered.
 
-## Carrier board (to design in KiCad)
+**The P4:**
+- **Mounting:** it plugs in from above into two 1×20 female sockets (J1 = P1 pins 1–20, J7 = pins 21–40), 17.78 mm apart.
+- **Orientation:** the silkscreen marks the RJ45 end and the USB-C end.
+- **Under the P4:** only traces, so the P4's bottom-side parts are clear.
+- **PoE module:** it stays on top of the P4 as usual; nothing on the carrier is near it.
 
-The carrier is through-hole only, so it can be hand-soldered. It plugs onto the 2×20 header.
-
-**Per button:**
-- **Connector:** a JST-XH 4-pin. Pin 1 = LED+ (+5 V), 2 = LED−, 3 = switch, 4 = GND. The power pins are on the outside, and +5 V is not next to GND.
+**Per button** (four channels along the bottom edge; left to right BTN4, BTN1, BTN3, BTN2, as labelled on the silkscreen):
+- **Connector:** a JST-XH 4-pin. Pin 1 = LED+ (+5 V), 2 = LED−, 3 = switch, 4 = GND.
 - **Switch input:** 1 kΩ in series to the GPIO, with 100 nF to GND. The pull-up is the ESP32's own; a pressed button reads low.
-- **LED ring:** switched low-side by a BC547, with a 1 kΩ base resistor and a 10 kΩ base pull-down that keeps it off during boot. A series resistor footprint (R_LED) is fitted with 0 Ω until a ring's current at 5 V has been measured.
+- **LED ring:**
+  - switched low-side by a BC547, with a 1 kΩ base resistor and a 10 kΩ base pull-down that keeps it off during boot;
+  - a series resistor (R13–R16) is fitted with 0 Ω until a ring's current at 5 V has been measured.
 
-**Also on the board:** 10 µF on 5 V, and a 1×4 header for the spares (GPIO2, GPIO3, GND, GND).
+**Also on the board:**
+- 10 µF on 5 V (C5).
+- J6, a 1×4 header for the spares: GPIO2, GPIO3, GND, GND. It is at the USB-C end, so don't use it while a USB cable is plugged in.
+- GND pours on both layers.
+- Four M3 holes (H1–H4).
 
 ESPHome: buttons `INPUT_PULLUP`, `inverted: true`; LEDs as `ledc` outputs (dimming, pulsing).
 

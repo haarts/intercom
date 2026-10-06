@@ -26,7 +26,7 @@ buttons** (3 children's rooms, 1 workshop), each with an LED ring.
 
 | Area | Decision |
 | --- | --- |
-| Board | **Waveshare ESP32-P4-WIFI6-POE-ETH** (arrived 2026-10-01). PoE, Ethernet, 32MB PSRAM, onboard mic, codec, speaker header. Wi-Fi only via the C6 co-processor. |
+| Board | **Waveshare ESP32-P4-ETH** (sku ESP32-P4-POE-ETH, arrived 2026-10-01). Ethernet, PoE via a module that sits on top of the P4, 32MB PSRAM, onboard mic, codec, speaker header. No Wi-Fi. |
 | Speaker | Onboard amp header (8Ω, 2W). Fine as is. |
 | Mumble server | Official **Murmur** container (`mumblevoip/mumble-server`). go-mumble-server (same author as the client) is the alternative. |
 | Firmware | **ESPHome**, using dchote/esp32-mumble as an external component, ported to the P4. Not plain ESP-IDF, and no MQTT (see below). |
