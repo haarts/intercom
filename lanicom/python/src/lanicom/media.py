@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import AsyncIterator, Iterable
+from typing import AsyncIterator, Iterable, Sequence
 
 from . import opus
 from .control import Target
@@ -44,17 +44,30 @@ async def _aiter(chunks):
             yield c
 
 
-async def send_pcm(node: Node, target: Target, chunks: AsyncIterator[bytes] | Iterable[bytes], bitrate: int = 24_000) -> int:
-    """Encode 10 ms PCM chunks and send them paced in real time. Returns frames sent."""
+async def send_pcm(
+    node: Node,
+    target: Target | Sequence[Target],
+    chunks: AsyncIterator[bytes] | Iterable[bytes],
+    bitrate: int = 24_000,
+) -> int:
+    """Encode 10 ms PCM chunks and send them paced in real time. Returns frames sent.
+
+    With several targets (for example a list of devices), each gets its own stream; every
+    frame is encoded once."""
     encoder = opus.Encoder(bitrate=bitrate)
-    talk = node.start_talk(target)
+    talks = [node.start_talk(t) for t in ([target] if isinstance(target, Target) else target)]
+    frames = 0
     start = time.monotonic()
     try:
         async for chunk in _aiter(chunks):
-            delay = start + talk.frames * 0.01 - time.monotonic()
+            delay = start + frames * 0.01 - time.monotonic()
             if delay > 0:
                 await asyncio.sleep(delay)
-            talk.send_frame(encoder.encode(chunk), opus.FRAME_10MS)
+            packet = encoder.encode(chunk)
+            for talk in talks:
+                talk.send_frame(packet, opus.FRAME_10MS)
+            frames += 1
     finally:
-        talk.stop()
-    return talk.frames
+        for talk in talks:
+            talk.stop()
+    return frames

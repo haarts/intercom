@@ -27,7 +27,6 @@ class PeerState:
 
     sender_id: int
     name: str
-    zones: list[str]
     address: str
     online: bool = True
     talking: bool = False
@@ -43,11 +42,11 @@ class PeerState:
 
 
 class LanicomHub:
-    def __init__(self, hass: HomeAssistant, entry_id: str, key: NetworkKey, name: str, zones: list[str], sender_id: int):
+    def __init__(self, hass: HomeAssistant, entry_id: str, key: NetworkKey, name: str, sender_id: int):
         self.hass = hass
         self.entry_id = entry_id
         # HA talks (announcements) and wants talk events, but plays no audio: devices don't stream to it.
-        self.node = Node(key, NodeConfig(name=name, zones=zones, caps=CAP_CAPTURE | CAP_MONITOR, sender_id=sender_id, rtt_probe=True))
+        self.node = Node(key, NodeConfig(name=name, caps=CAP_CAPTURE | CAP_MONITOR, sender_id=sender_id, rtt_probe=True))
         self.peers: dict[int, PeerState] = {}
         self._unsub_interval = None
         self.node.on_peer_added = self._peer_added
@@ -70,8 +69,8 @@ class LanicomHub:
     def _state_from(self, peer: Peer) -> PeerState:
         state = self.peers.get(peer.sender_id)
         if state is None:
-            state = self.peers[peer.sender_id] = PeerState(peer.sender_id, peer.name, list(peer.zones), peer.addr[0])
-        state.name, state.zones, state.address = peer.name, list(peer.zones), peer.addr[0]
+            state = self.peers[peer.sender_id] = PeerState(peer.sender_id, peer.name, peer.addr[0])
+        state.name, state.address = peer.name, peer.addr[0]
         state.online = True
         state.rtt_ms = peer.rtt_ms
         state.last_seen = dt_util.utcnow()
@@ -134,14 +133,15 @@ class LanicomHub:
 
     # --- announcements ------------------------------------------------------------
 
-    def resolve_target(self, text: str) -> Target:
-        """'all', 'zone:<z>', 'device:<id>', or a device's name."""
-        text = text.strip()
-        if text in ("", "all"):
-            return Target.everyone()
+    def resolve_targets(self, names: list[str]) -> list[Target]:
+        """Device names, 'device:<id>', or 'all' (alone). One target per device."""
+        names = [n.strip() for n in names if n.strip()]
+        if not names or names == ["all"]:
+            return [Target.everyone()]
+        return [self._resolve_device(n) for n in names]
+
+    def _resolve_device(self, text: str) -> Target:
         kind, _, value = text.partition(":")
-        if kind == "zone" and value:
-            return Target(zone=value.lower())
         if kind == "device" and value:
             try:
                 return Target(device=int(value, 16))
@@ -150,4 +150,4 @@ class LanicomHub:
         for state in self.peers.values():
             if state.online and state.name.casefold() == text.casefold():
                 return Target(device=state.sender_id)
-        raise HomeAssistantError(f"Unknown intercom target '{text}': use all, zone:<name>, device:<id> or a device name")
+        raise HomeAssistantError(f"Unknown intercom device '{text}': use a device name, device:<id>, or all")

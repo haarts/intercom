@@ -146,9 +146,8 @@ The CONTROL plaintext is one protobuf `Control` message, as defined in
   routed VLANs.
 - A peer is forgotten after 30 s without a verified packet, or immediately on
   a verified `Hello` with `bye = true`.
-- `name` is a display name (UTF-8, ≤ 32 bytes). `zones` are lowercase ASCII
-  labels (≤ 8 zones, each ≤ 16 bytes), and a device always belongs to its own
-  zones only. A changed name or changed zones take effect with the next `Hello`.
+- `name` is a display name (UTF-8, ≤ 32 bytes). A changed name takes effect
+  with the next `Hello`.
 - `caps`: bit 0 `PLAYBACK` (plays audio), bit 1 `CAPTURE` (can talk), bit 2 `MONITOR`
   (wants talk metadata for every stream, e.g. Home Assistant, without receiving audio).
 
@@ -192,8 +191,10 @@ The AUDIO plaintext is:
 A talker resolves its `Target` against its peer table at send time:
 
 - `device`: that peer.
-- `zone`: every peer that lists the zone.
 - `all`: every peer.
+
+To reach a set of devices, a talker sends one stream to each of them: the same
+stream, sealed once per recipient (see below).
 
 It only includes peers that have `PLAYBACK` set and are verified. It seals each
 frame once and sends a copy to every peer in that set (unicast fan-out).

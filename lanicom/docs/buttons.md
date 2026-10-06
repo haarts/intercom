@@ -8,7 +8,7 @@ one PTT button with a fixed target.
 
 - **One button, one partner.** A link joins exactly two buttons, on two devices.
 - **Buttons are the only way to call.** A device can only talk to the partners on its
-  buttons. There are no zones and no "all" in the user interface.
+  buttons. There is no "all" button.
 - **Group calls:** hold two, three or four buttons at the same time to talk to all of those
   partners at once.
   - The buttons don't have to go down together. A button pressed during a talk adds its
@@ -109,10 +109,6 @@ Home Assistant addresses devices the way a group call works: it picks the set of
 and sends each one a copy (unicast fan-out, as now). That can be one device, any list of
 devices, or all of them. Groupings such as "upstairs" are Home Assistant areas or labels,
 not something the devices know about.
-
-**Zones go away.** Nothing uses them any more: buttons talk to partners, and Home Assistant
-groups devices itself. The firmware drops its "Intercom zones" entity. The protocol can
-keep the field for compatibility, and mark it deprecated in v1.1.
 
 ## LED patterns
 

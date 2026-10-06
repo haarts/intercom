@@ -105,7 +105,7 @@ static void challenge(lc_engine_t *e, lc_peer_t *p, uint32_t now_ms) {
 }
 
 static bool recipient(const lc_peer_t *p, const lc_target_t *t) {
-  return p->in_use && p->verified && (p->info.caps & LC_CAP_PLAYBACK) && lc_target_matches(t, p->sender_id, &p->info);
+  return p->in_use && p->verified && (p->info.caps & LC_CAP_PLAYBACK) && lc_target_matches(t, p->sender_id);
 }
 
 size_t lc_engine_recipient_count(const lc_engine_t *e, const lc_target_t *target) {
@@ -152,30 +152,9 @@ static void send_talk_metadata(lc_engine_t *e, const lc_control_t *msg, const lc
 
 /* --- identity ------------------------------------------------------------ */
 
-void lc_engine_set_identity(lc_engine_t *e, const char *name, const char *zones, uint32_t caps) {
+void lc_engine_set_identity(lc_engine_t *e, const char *name, uint32_t caps) {
   snprintf(e->self.name, sizeof(e->self.name), "%s", name ? name : "");
-  e->self.n_zones = 0;
   e->self.caps = caps;
-  const char *p = zones ? zones : "";
-  while (*p && e->self.n_zones < LC_ZONES_MAX) {
-    while (*p == ',' || *p == ' ')
-      p++;
-    const char *end = p;
-    while (*end && *end != ',')
-      end++;
-    size_t n = (size_t)(end - p);
-    while (n && p[n - 1] == ' ')
-      n--;
-    if (n) {
-      if (n > LC_ZONE_MAX)
-        n = LC_ZONE_MAX;
-      char *z = e->self.zones[e->self.n_zones++];
-      for (size_t i = 0; i < n; i++)
-        z[i] = (char)((p[i] >= 'A' && p[i] <= 'Z') ? p[i] + 32 : p[i]);
-      z[n] = 0;
-    }
-    p = end;
-  }
   if (e->startup_hellos >= 3) { /* already running: tell everyone now */
     broadcast_hello(e, false);
     for (int i = 0; i < LC_MAX_PEERS; i++)
@@ -283,12 +262,8 @@ static void handle_control(lc_engine_t *e, lc_peer_t *p, const lc_control_t *msg
       remove_peer(e, p);
       return;
     }
-    bool changed = strcmp(h->name, p->info.name) != 0 || h->caps != p->info.caps || h->n_zones != p->info.n_zones;
-    for (uint8_t i = 0; !changed && i < h->n_zones; i++)
-      changed = strcmp(h->zones[i], p->info.zones[i]) != 0;
+    bool changed = strcmp(h->name, p->info.name) != 0 || h->caps != p->info.caps;
     memcpy(p->info.name, h->name, sizeof(p->info.name));
-    memcpy(p->info.zones, h->zones, sizeof(p->info.zones));
-    p->info.n_zones = h->n_zones;
     p->info.caps = h->caps;
     if (!p->announced) {
       p->announced = true;

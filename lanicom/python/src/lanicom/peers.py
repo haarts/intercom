@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .control import CAP_MONITOR, CAP_PLAYBACK, Target
 from .replay import ReplayWindow
@@ -19,7 +19,6 @@ class Peer:
     first_seen: float
     last_seen: float = 0.0
     name: str = ""
-    zones: list[str] = field(default_factory=list)
     caps: int = 0
     verified_epoch: int | None = None
     window: ReplayWindow | None = None
@@ -39,8 +38,6 @@ class Peer:
     def matches(self, target: Target) -> bool:
         if target.device is not None:
             return self.sender_id == target.device
-        if target.zone is not None:
-            return target.zone in self.zones
         return target.all
 
 

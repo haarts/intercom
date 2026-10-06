@@ -24,7 +24,7 @@ pip install -e 'lanicom/python[audio]'   # needs libopus0 and PortAudio (Debian:
 lanicom keygen --save                    # once; copy ~/.config/lanicom/key to the other machine
 lanicom list                             # who is on the network
 lanicom talk --to all                    # Enter starts/stops talking; also plays what others say
-lanicom send doorbell.mp3 --to zone:kids # play a file (needs ffmpeg)
+lanicom send doorbell.mp3 --to all       # play a file (needs ffmpeg)
 lanicom record out.wav --duration 10     # record what others say
 ```
 

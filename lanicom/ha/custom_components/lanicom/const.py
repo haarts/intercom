@@ -3,7 +3,6 @@
 DOMAIN = "lanicom"
 
 CONF_KEY = "key"
-CONF_ZONES = "zones"
 CONF_SENDER_ID = "sender_id"
 
 DEFAULT_NAME = "Home Assistant"

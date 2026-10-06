@@ -47,8 +47,8 @@ def control_vectors():
     def add(name, msg, fields):
         cases.append({"name": name, "message": fields, "bytes": msg.SerializeToString().hex()})
 
-    c = pb.Control(hello=pb.Hello(name="Keuken", zones=["kitchen", "downstairs"], caps=3))
-    add("hello", c, {"hello": {"name": "Keuken", "zones": ["kitchen", "downstairs"], "caps": 3}})
+    c = pb.Control(hello=pb.Hello(name="Keuken", caps=3))
+    add("hello", c, {"hello": {"name": "Keuken", "caps": 3}})
     c = pb.Control(hello=pb.Hello(name="Zolder ☀", caps=1, challenge=0x0123456789ABCDEF))
     add("hello_challenge_utf8", c, {"hello": {"name": "Zolder ☀", "caps": 1, "challenge": 0x0123456789ABCDEF}})
     c = pb.Control(hello=pb.Hello(echo=0xFEDCBA9876543210, bye=True))
@@ -57,8 +57,6 @@ def control_vectors():
     add("hello_empty", c, {"hello": {}})
     c = pb.Control(talk_start=pb.TalkStart(target=pb.Target(all=True), stream_id=0xDEADBEEF))
     add("talk_start_all", c, {"talk_start": {"target": {"all": True}, "stream_id": 0xDEADBEEF}})
-    c = pb.Control(talk_start=pb.TalkStart(target=pb.Target(zone="kids"), stream_id=7))
-    add("talk_start_zone", c, {"talk_start": {"target": {"zone": "kids"}, "stream_id": 7}})
     c = pb.Control(talk_start=pb.TalkStart(target=pb.Target(device=0x8A3F01C2), stream_id=300))
     add("talk_start_device", c, {"talk_start": {"target": {"device": 0x8A3F01C2}, "stream_id": 300}})
     c = pb.Control(talk_stop=pb.TalkStop(stream_id=0xDEADBEEF))

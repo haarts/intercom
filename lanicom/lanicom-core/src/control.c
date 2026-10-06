@@ -88,8 +88,6 @@ static void end_sub(wbuf_t *w, size_t start) {
 static void encode_hello(wbuf_t *w, const lc_hello_t *h) {
   if (h->name[0])
     put_string(w, 1, h->name);
-  for (uint8_t i = 0; i < h->n_zones && i < LC_ZONES_MAX; i++)
-    put_string(w, 2, h->zones[i]);
   if (h->caps) {
     put_key(w, 3, WT_VARINT);
     put_varint(w, h->caps);
@@ -124,8 +122,6 @@ int lc_control_encode(const lc_control_t *msg, uint8_t *out, size_t cap) {
       if (t->kind == LC_TARGET_DEVICE) {
         put_key(&w, 1, WT_I32);
         put_fixed(&w, t->device, 4);
-      } else if (t->kind == LC_TARGET_ZONE) {
-        put_string(&w, 2, t->zone);
       } else {
         put_key(&w, 3, WT_VARINT);
         put_varint(&w, 1);
@@ -256,14 +252,6 @@ static int decode_hello(const uint8_t *data, size_t len, lc_hello_t *h) {
         if (!copy_string(&f, h->name, sizeof(h->name)))
           return -1;
         break;
-      case 2:
-        EXPECT(f, WT_LEN);
-        if (h->n_zones < LC_ZONES_MAX) {
-          if (!copy_string(&f, h->zones[h->n_zones], sizeof(h->zones[0])))
-            return -1;
-          h->n_zones++;
-        }
-        break;
       case 3:
         EXPECT(f, WT_VARINT);
         h->caps = (uint32_t)f.value;
@@ -298,11 +286,6 @@ static int decode_target(const uint8_t *data, size_t len, lc_target_t *t) {
         EXPECT(f, WT_I32);
         t->kind = LC_TARGET_DEVICE;
         t->device = (uint32_t)f.value;
-        break;
-      case 2:
-        t->kind = LC_TARGET_ZONE;
-        if (!copy_string(&f, t->zone, sizeof(t->zone)))
-          return -1;
         break;
       case 3:
         EXPECT(f, WT_VARINT);
@@ -360,29 +343,14 @@ int lc_control_decode(const uint8_t *data, size_t len, lc_control_t *msg) {
   return r.error ? -1 : 0;
 }
 
-bool lc_target_matches(const lc_target_t *t, uint32_t sender_id, const lc_hello_t *hello) {
-  switch (t->kind) {
-    case LC_TARGET_DEVICE:
-      return t->device == sender_id;
-    case LC_TARGET_ZONE:
-      for (uint8_t i = 0; i < hello->n_zones; i++)
-        if (strcmp(hello->zones[i], t->zone) == 0)
-          return true;
-      return false;
-    default:
-      return true;
-  }
+bool lc_target_matches(const lc_target_t *t, uint32_t sender_id) {
+  return t->kind != LC_TARGET_DEVICE || t->device == sender_id;
 }
 
 int lc_target_parse(const char *text, lc_target_t *t) {
   memset(t, 0, sizeof(*t));
   if (text == NULL || strcmp(text, "all") == 0 || text[0] == 0) {
     t->kind = LC_TARGET_ALL;
-    return 0;
-  }
-  if (strncmp(text, "zone:", 5) == 0 && text[5] && strlen(text + 5) <= LC_ZONE_MAX) {
-    t->kind = LC_TARGET_ZONE;
-    strcpy(t->zone, text + 5);
     return 0;
   }
   if (strncmp(text, "device:", 7) == 0 && text[7]) {

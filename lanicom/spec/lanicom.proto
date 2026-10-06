@@ -14,9 +14,9 @@ package lanicom.v1;
 message Target {
   oneof t {
     fixed32 device = 1;  // one device, by sender_id
-    string zone = 2;     // every device that lists this zone
     bool all = 3;        // every device
   }
+  reserved 2;
 }
 
 // Capability bits for Hello.caps.
@@ -26,7 +26,7 @@ message Target {
 
 message Hello {
   string name = 1;
-  repeated string zones = 2;
+  reserved 2;
   uint32 caps = 3;
   // Liveness proof (PROTOCOL.md, "Epoch verification"): a peer that sees a
   // new epoch from us sends `challenge`; we answer with `echo` = that value.

@@ -49,11 +49,9 @@ class LanicomComponent : public Component {
   void set_speaker(speaker::Speaker *spk) { this->speaker_ = spk; }
   void set_key(const std::string &key) { this->key_string_ = key; }
   void set_device_name(const std::string &name) { this->name_ = name; }
-  void set_zones(const std::string &zones) { this->zones_ = zones; }
 #ifdef USE_TEXT
   void set_key_text(text::Text *t) { this->key_text_ = t; }
   void set_name_text(text::Text *t) { this->name_text_ = t; }
-  void set_zones_text(text::Text *t) { this->zones_text_ = t; }
 #endif
   void set_port(uint16_t port) { this->port_ = port; }
   void set_multicast(bool m) { this->multicast_ = m; }
@@ -122,9 +120,9 @@ class LanicomComponent : public Component {
   // Config.
   microphone::Microphone *mic_{nullptr};
   speaker::Speaker *speaker_{nullptr};
-  std::string key_string_, name_, zones_;
+  std::string key_string_, name_;
 #ifdef USE_TEXT
-  text::Text *key_text_{nullptr}, *name_text_{nullptr}, *zones_text_{nullptr};
+  text::Text *key_text_{nullptr}, *name_text_{nullptr};
 #endif
   uint16_t port_{LC_PORT};
   bool multicast_{false};

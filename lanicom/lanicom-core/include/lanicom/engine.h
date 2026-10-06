@@ -40,7 +40,7 @@ typedef struct {
   uint32_t sender_id;
   lc_addr_t addr;
   uint32_t first_seen_ms, last_seen_ms;
-  lc_hello_t info; /* name, zones, caps from the last verified Hello */
+  lc_hello_t info; /* name, caps from the last verified Hello */
   bool announced;  /* peer_added fired */
   bool verified;
   uint64_t verified_epoch;
@@ -117,8 +117,8 @@ typedef struct {
 /* `epoch` must never repeat for this sender_id: use (boot_counter << 32) | random32. */
 void lc_engine_init(lc_engine_t *e, const lc_key_t *key, uint32_t sender_id, uint64_t epoch,
                     const lc_callbacks_t *cb, uint32_t now_ms);
-/* `zones`: comma-separated. Announces the change to peers. */
-void lc_engine_set_identity(lc_engine_t *e, const char *name, const char *zones, uint32_t caps);
+/* Announces the change to peers. */
+void lc_engine_set_identity(lc_engine_t *e, const char *name, uint32_t caps);
 int lc_engine_add_static_peer(lc_engine_t *e, lc_addr_t addr);
 void lc_engine_receive(lc_engine_t *e, const uint8_t *data, size_t len, lc_addr_t from, uint32_t now_ms);
 /* Call every 100 ms or so: Hellos, expiry. */

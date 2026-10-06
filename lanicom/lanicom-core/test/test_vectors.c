@@ -83,7 +83,7 @@ static void test_invalid(void) {
 }
 
 static bool target_eq(const lc_target_t *a, const lc_target_t *b) {
-  return a->kind == b->kind && a->device == b->device && strcmp(a->zone, b->zone) == 0;
+  return a->kind == b->kind && a->device == b->device;
 }
 
 static bool control_eq(const lc_control_t *a, const lc_control_t *b) {
@@ -91,13 +91,8 @@ static bool control_eq(const lc_control_t *a, const lc_control_t *b) {
     return false;
   if (a->type == LC_MSG_HELLO) {
     const lc_hello_t *x = &a->u.hello, *y = &b->u.hello;
-    if (strcmp(x->name, y->name) || x->n_zones != y->n_zones || x->caps != y->caps || x->challenge != y->challenge ||
-        x->echo != y->echo || x->bye != y->bye)
-      return false;
-    for (int i = 0; i < x->n_zones; i++)
-      if (strcmp(x->zones[i], y->zones[i]))
-        return false;
-    return true;
+    return strcmp(x->name, y->name) == 0 && x->caps == y->caps && x->challenge == y->challenge && x->echo == y->echo &&
+           x->bye == y->bye;
   }
   if (a->type == LC_MSG_TALK_START)
     return target_eq(&a->u.talk_start.target, &b->u.talk_start.target) &&
@@ -131,21 +126,30 @@ static void test_control(void) {
     lc_control_t msg;
     (void)lc_control_decode(junk, len, &msg);
   }
-  /* Long submessage (> 127 bytes) exercises the multi-byte length path. */
-  lc_control_t big = {.type = LC_MSG_HELLO};
-  memset(big.u.hello.name, 'n', LC_NAME_MAX);
-  for (int z = 0; z < LC_ZONES_MAX; z++) {
-    memset(big.u.hello.zones[z], 'a' + z, LC_ZONE_MAX);
-  }
-  big.u.hello.n_zones = LC_ZONES_MAX;
-  big.u.hello.challenge = 5;
-  uint8_t buf[512];
-  int n = lc_control_encode(&big, buf, sizeof(buf));
-  CHECK(n > 130);
+  /* A Hello carrying a long unknown field (> 127 bytes, from a future version) exercises the
+   * multi-byte length path: the field is skipped and the rest still decodes. */
+  uint8_t buf[256];
+  size_t n = 0;
+  buf[n++] = 0x0a; /* Control.hello, LEN */
+  buf[n++] = 0x80 | (4 + 3 + 150) % 128;
+  buf[n++] = (4 + 3 + 150) / 128;
+  buf[n++] = 0x0a; /* Hello.name, LEN 2 */
+  buf[n++] = 2;
+  buf[n++] = 'H';
+  buf[n++] = 'i';
+  buf[n++] = 0x4a; /* field 9, LEN 150 */
+  buf[n++] = 0x80 | 150 % 128;
+  buf[n++] = 150 / 128;
+  memset(buf + n, 'z', 150);
+  n += 150;
   lc_control_t back;
-  CHECK(lc_control_decode(buf, (size_t)n, &back) == 0);
-  CHECK(control_eq(&big, &back));
-  CHECK(lc_control_encode(&big, buf, 100) == -1);
+  CHECK(lc_control_decode(buf, n, &back) == 0);
+  CHECK(back.type == LC_MSG_HELLO && strcmp(back.u.hello.name, "Hi") == 0);
+  /* Encoding into a buffer that is too small fails cleanly. */
+  lc_control_t full = {.type = LC_MSG_HELLO};
+  memset(full.u.hello.name, 'n', LC_NAME_MAX);
+  full.u.hello.challenge = 5;
+  CHECK(lc_control_encode(&full, buf, 20) == -1);
 }
 
 static void test_replay(void) {
@@ -161,7 +165,6 @@ static void test_replay(void) {
 static void test_targets(void) {
   lc_target_t t;
   CHECK(lc_target_parse("all", &t) == 0 && t.kind == LC_TARGET_ALL);
-  CHECK(lc_target_parse("zone:kids", &t) == 0 && t.kind == LC_TARGET_ZONE && strcmp(t.zone, "kids") == 0);
   CHECK(lc_target_parse("device:8a3f01c2", &t) == 0 && t.kind == LC_TARGET_DEVICE && t.device == 0x8a3f01c2u);
   CHECK(lc_target_parse("device:xyz", &t) != 0);
   CHECK(lc_target_parse("bogus", &t) != 0);

@@ -10,10 +10,10 @@ pb = pbref.load()
 
 def to_pb(msg):
     if isinstance(msg, control.Hello):
-        return pb.Control(hello=pb.Hello(name=msg.name, zones=msg.zones, caps=msg.caps, challenge=msg.challenge, echo=msg.echo, bye=msg.bye))
+        return pb.Control(hello=pb.Hello(name=msg.name, caps=msg.caps, challenge=msg.challenge, echo=msg.echo, bye=msg.bye))
     if isinstance(msg, control.TalkStart):
         t = msg.target
-        target = pb.Target(device=t.device) if t.device is not None else pb.Target(zone=t.zone) if t.zone is not None else pb.Target(all=t.all)
+        target = pb.Target(device=t.device) if t.device is not None else pb.Target(all=t.all)
         return pb.Control(talk_start=pb.TalkStart(target=target, stream_id=msg.stream_id))
     return pb.Control(talk_stop=pb.TalkStop(stream_id=msg.stream_id))
 
@@ -23,11 +23,11 @@ def random_msg(rng):
     word = lambda: "".join(rng.choice("abcdeé☀ ") for _ in range(rng.randrange(0, 12)))
     if kind == 0:
         return control.Hello(
-            name=word(), zones=[word() for _ in range(rng.randrange(4))], caps=rng.choice([0, 1, 2, 3, 2**32 - 1]),
+            name=word(), caps=rng.choice([0, 1, 2, 3, 2**32 - 1]),
             challenge=rng.choice([0, rng.getrandbits(64)]), echo=rng.choice([0, rng.getrandbits(64)]), bye=rng.random() < 0.2,
         )
     if kind == 1:
-        target = rng.choice([control.Target(device=rng.getrandbits(32)), control.Target(zone=word()), control.Target(all=True)])
+        target = rng.choice([control.Target(device=rng.getrandbits(32)), control.Target(all=True)])
         return control.TalkStart(target=target, stream_id=rng.getrandbits(32))
     return control.TalkStop(stream_id=rng.getrandbits(32))
 

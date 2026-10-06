@@ -56,9 +56,7 @@ def test_control_round_trip_through_c():
     for _ in range(200):
         msg = random_msg(rng)
         # The C codec truncates to protocol limits; only compare messages within them.
-        if isinstance(msg, control.Hello) and (len(msg.name.encode()) > 32 or len(msg.zones) > 8 or any(len(z.encode()) > 16 for z in msg.zones)):
-            continue
-        if isinstance(msg, control.TalkStart) and msg.target.zone is not None and len(msg.target.zone.encode()) > 16:
+        if isinstance(msg, control.Hello) and len(msg.name.encode()) > 32:
             continue
         data = control.encode(msg)
         assert tool("control", data.hex()) == data.hex()

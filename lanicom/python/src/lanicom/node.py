@@ -38,7 +38,6 @@ def _nonzero_random32() -> int:
 @dataclass
 class NodeConfig:
     name: str
-    zones: list[str] = field(default_factory=list)
     caps: int = CAP_PLAYBACK | CAP_CAPTURE
     port: int = PORT
     bind: str = "0.0.0.0"
@@ -184,7 +183,7 @@ class Node(asyncio.DatagramProtocol):
                 self._sendto(data, peer.addr)
 
     def _hello(self, **kw) -> Hello:
-        return Hello(name=self.config.name, zones=list(self.config.zones), caps=self.config.caps, **kw)
+        return Hello(name=self.config.name, caps=self.config.caps, **kw)
 
     def _send_hello_to(self, addr: tuple[str, int], **kw) -> None:
         self._sendto(self._seal(TYPE_CONTROL, control.encode(self._hello(**kw))), addr)
@@ -207,7 +206,7 @@ class Node(asyncio.DatagramProtocol):
         return Talk(self, target or Target.everyone())
 
     def announce_changed(self) -> None:
-        """Call after changing config.name/zones/caps."""
+        """Call after changing config.name/caps."""
         self._broadcast_hello()
         for peer in self.peers:
             if peer.verified:
@@ -343,11 +342,11 @@ class Node(asyncio.DatagramProtocol):
                 if self.peers.remove(peer.sender_id):
                     self._peer_gone(peer)
                 return
-            changed = (msg.name, msg.zones, msg.caps) != (peer.name, peer.zones, peer.caps)
-            peer.name, peer.zones, peer.caps = msg.name, list(msg.zones), msg.caps
+            changed = (msg.name, msg.caps) != (peer.name, peer.caps)
+            peer.name, peer.caps = msg.name, msg.caps
             if not peer.announced:
                 peer.announced = True
-                _LOGGER.info("peer %s (%s) at %s:%d, zones %s", peer.id_hex, peer.name, *peer.addr, peer.zones)
+                _LOGGER.info("peer %s (%s) at %s:%d", peer.id_hex, peer.name, *peer.addr)
                 if self.on_peer_added:
                     self.on_peer_added(peer)
             elif changed and self.on_peer_updated:

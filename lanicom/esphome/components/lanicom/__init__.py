@@ -23,8 +23,6 @@ CONF_KEY = "key"
 CONF_KEY_TEXT_ID = "key_text_id"
 CONF_DEVICE_NAME = "device_name"
 CONF_NAME_TEXT_ID = "name_text_id"
-CONF_ZONES = "zones"
-CONF_ZONES_TEXT_ID = "zones_text_id"
 CONF_MULTICAST = "multicast"
 CONF_STATIC_PEERS = "static_peers"
 CONF_JITTER_BUFFER = "jitter_buffer"
@@ -50,17 +48,9 @@ IsReceivingCondition = lanicom_ns.class_("IsReceivingCondition", automation.Cond
 IsTalkingCondition = lanicom_ns.class_("IsTalkingCondition", automation.Condition)
 
 
-def _zones(value):
-    value = cv.string(value)
-    zones = [z.strip().lower() for z in value.split(",") if z.strip()]
-    if len(zones) > 8 or any(len(z) > 16 for z in zones):
-        raise cv.Invalid("at most 8 zones of at most 16 characters")
-    return ",".join(zones)
-
-
 def _target(value):
     value = cv.string(value)
-    if value == "all" or (value.startswith("zone:") and len(value) > 5):
+    if value == "all":
         return value
     if value.startswith("device:"):
         try:
@@ -68,7 +58,7 @@ def _target(value):
                 return value
         except ValueError:
             pass
-    raise cv.Invalid("target is 'all', 'zone:<name>' or 'device:<8 hex digits>'")
+    raise cv.Invalid("target is 'all' or 'device:<8 hex digits>'")
 
 
 CONFIG_SCHEMA = cv.All(
@@ -83,8 +73,6 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_KEY_TEXT_ID): cv.use_id(text.Text),
             cv.Optional(CONF_DEVICE_NAME, default=""): cv.string,
             cv.Optional(CONF_NAME_TEXT_ID): cv.use_id(text.Text),
-            cv.Optional(CONF_ZONES, default=""): _zones,
-            cv.Optional(CONF_ZONES_TEXT_ID): cv.use_id(text.Text),
             cv.Optional(CONF_PORT, default=47100): cv.port,
             cv.Optional(CONF_MULTICAST, default=False): cv.boolean,
             cv.Optional(CONF_STATIC_PEERS, default=[]): cv.ensure_list(cv.ipv4address),
@@ -139,11 +127,9 @@ async def to_code(config):
         cg.add(var.set_speaker(await cg.get_variable(config[CONF_SPEAKER])))
     cg.add(var.set_key(config[CONF_KEY]))
     cg.add(var.set_device_name(config[CONF_DEVICE_NAME]))
-    cg.add(var.set_zones(config[CONF_ZONES]))
     for conf_key, setter in (
         (CONF_KEY_TEXT_ID, "set_key_text"),
         (CONF_NAME_TEXT_ID, "set_name_text"),
-        (CONF_ZONES_TEXT_ID, "set_zones_text"),
     ):
         if conf_key in config:
             cg.add(getattr(var, setter)(await cg.get_variable(config[conf_key])))

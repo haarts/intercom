@@ -16,10 +16,8 @@ def c_str(s):
 
 def target(t):
     if "device" in t:
-        return f"{{LC_TARGET_DEVICE, 0x{t['device']:08x}u, \"\"}}"
-    if "zone" in t:
-        return f"{{LC_TARGET_ZONE, 0, {c_str(t['zone'])}}}"
-    return "{LC_TARGET_ALL, 0, \"\"}"
+        return f"{{LC_TARGET_DEVICE, 0x{t['device']:08x}u}}"
+    return "{LC_TARGET_ALL, 0}"
 
 
 def main(src, dst):
@@ -56,9 +54,7 @@ def main(src, dst):
         m = c["message"]
         if "hello" in m:
             h = m["hello"]
-            zones = h.get("zones", [])
-            zinit = "{" + ", ".join(c_str(z) for z in zones) + "}" if zones else "{\"\"}"
-            body = (f"{{.type = LC_MSG_HELLO, .u.hello = {{{c_str(h.get('name', ''))}, {zinit}, {len(zones)}, "
+            body = (f"{{.type = LC_MSG_HELLO, .u.hello = {{{c_str(h.get('name', ''))}, "
                     f"{h.get('caps', 0)}u, 0x{h.get('challenge', 0):016x}ull, 0x{h.get('echo', 0):016x}ull, "
                     f"{'true' if h.get('bye') else 'false'}}}}}")
         elif "talk_start" in m:

@@ -25,7 +25,6 @@ class ControlError(ValueError):
 @dataclass(frozen=True)
 class Target:
     device: int | None = None
-    zone: str | None = None
     all: bool = False
 
     @classmethod
@@ -35,15 +34,12 @@ class Target:
     def __str__(self) -> str:
         if self.device is not None:
             return f"device:{self.device:08x}"
-        if self.zone is not None:
-            return f"zone:{self.zone}"
         return "all"
 
 
 @dataclass
 class Hello:
     name: str = ""
-    zones: list[str] = field(default_factory=list)
     caps: int = 0
     challenge: int = 0
     echo: int = 0
@@ -90,8 +86,6 @@ def _len_field(num: int, payload: bytes) -> bytes:
 def _encode_target(t: Target) -> bytes:
     if t.device is not None:
         return _key(1, _I32) + struct.pack("<I", t.device)
-    if t.zone is not None:
-        return _len_field(2, t.zone.encode())
     return _key(3, _VARINT) + _varint(1 if t.all else 0)
 
 
@@ -99,8 +93,6 @@ def _encode_hello(h: Hello) -> bytes:
     out = b""
     if h.name:
         out += _len_field(1, h.name.encode())
-    for zone in h.zones:
-        out += _len_field(2, zone.encode())
     if h.caps:
         out += _key(3, _VARINT) + _varint(h.caps)
     if h.challenge:
@@ -193,9 +185,6 @@ def _decode_target(data: bytes) -> Target:
         if num == 1:
             _expect(wire, _I32)
             t = Target(device=value)
-        elif num == 2:
-            _expect(wire, _LEN)
-            t = Target(zone=_text(value))
         elif num == 3:
             _expect(wire, _VARINT)
             t = Target(all=bool(value))
@@ -208,9 +197,6 @@ def _decode_hello(data: bytes) -> Hello:
         if num == 1:
             _expect(wire, _LEN)
             h.name = _text(value)
-        elif num == 2:
-            _expect(wire, _LEN)
-            h.zones.append(_text(value))
         elif num == 3:
             _expect(wire, _VARINT)
             h.caps = value & 0xFFFFFFFF

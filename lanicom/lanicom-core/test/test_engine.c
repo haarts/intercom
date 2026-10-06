@@ -92,14 +92,14 @@ static void run(uint32_t ms) {
   }
 }
 
-static node_t *add_node(const lc_key_t *key, const char *name, const char *zones) {
+static node_t *add_node(const lc_key_t *key, const char *name) {
   node_t *n = &nodes[n_nodes];
   memset(n, 0, sizeof(*n));
   n->ip = 0x0A000001u + (uint32_t)n_nodes;
   n->seed = 1234u + (unsigned)n_nodes * 77u + now;
   lc_callbacks_t cb = {net_send, rnd, on_added, on_removed, NULL, on_start, on_stop, on_audio, NULL, n};
   lc_engine_init(&n->e, key, 0, 0, &cb, now);
-  lc_engine_set_identity(&n->e, name, zones, LC_CAP_PLAYBACK | LC_CAP_CAPTURE);
+  lc_engine_set_identity(&n->e, name, LC_CAP_PLAYBACK | LC_CAP_CAPTURE);
   n_nodes++;
   return n;
 }
@@ -121,10 +121,10 @@ static lc_key_t key_a, key_b;
 
 static void test_discovery_and_talk(void) {
   reset();
-  node_t *a = add_node(&key_a, "Hall", "downstairs");
-  node_t *b = add_node(&key_a, "Kids", "Kids, upstairs");
-  node_t *c = add_node(&key_a, "Workshop", "workshop");
-  node_t *x = add_node(&key_b, "Neighbour", "kids");
+  node_t *a = add_node(&key_a, "Hall");
+  node_t *b = add_node(&key_a, "Kids");
+  node_t *c = add_node(&key_a, "Workshop");
+  node_t *x = add_node(&key_b, "Neighbour");
   run(100);
   CHECK(verified(a, b) && verified(b, a) && verified(a, c) && verified(c, b));
   CHECK_EQ(lc_engine_peer_count(&a->e), 2);
@@ -132,11 +132,9 @@ static void test_discovery_and_talk(void) {
   CHECK(lc_engine_find_peer(&a->e, x->e.sender_id) == NULL);
   CHECK_EQ(lc_engine_peer_count(&x->e), 0);
   CHECK(a->e.stats.foreign > 0);
-  CHECK_EQ(lc_engine_find_peer(&a->e, b->e.sender_id)->info.n_zones, 2);
-  CHECK(strcmp(lc_engine_find_peer(&a->e, b->e.sender_id)->info.zones[0], "kids") == 0);
+  CHECK(strcmp(lc_engine_find_peer(&a->e, b->e.sender_id)->info.name, "Kids") == 0);
 
-  lc_target_t t;
-  lc_target_parse("zone:kids", &t);
+  lc_target_t t = {LC_TARGET_DEVICE, b->e.sender_id};
   lc_talk_t talk;
   lc_talk_begin(&a->e, &talk, &t);
   uint8_t opus[3] = {0x78, 1, 2};
@@ -151,7 +149,7 @@ static void test_discovery_and_talk(void) {
   CHECK_EQ(x->audio, 0);
   CHECK_EQ(b->starts, 1);
   CHECK_EQ(b->stops, 1);
-  CHECK(b->last_target.kind == LC_TARGET_ZONE);
+  CHECK(b->last_target.kind == LC_TARGET_DEVICE && b->last_target.device == b->e.sender_id);
   CHECK_EQ(b->last_ts - talk.ts, (uint32_t)-480); /* last frame's ts */
 
   lc_target_parse("all", &t);
@@ -169,8 +167,8 @@ static void test_discovery_and_talk(void) {
 
 static void test_expiry(void) {
   reset();
-  node_t *a = add_node(&key_a, "A", "");
-  node_t *b = add_node(&key_a, "B", "");
+  node_t *a = add_node(&key_a, "A");
+  node_t *b = add_node(&key_a, "B");
   run(100);
   CHECK(verified(a, b));
   n_nodes = 1; /* b vanishes without a word */
@@ -181,11 +179,11 @@ static void test_expiry(void) {
 
 static void test_replay_after_restart(void) {
   reset();
-  node_t *a = add_node(&key_a, "A", "");
-  node_t *b = add_node(&key_a, "B", "");
+  node_t *a = add_node(&key_a, "A");
+  node_t *b = add_node(&key_a, "B");
   run(100);
   capture_from = 0;
-  lc_target_t t = {LC_TARGET_ALL, 0, ""};
+  lc_target_t t = {LC_TARGET_ALL, 0};
   lc_talk_t talk;
   lc_talk_begin(&a->e, &talk, &t);
   uint8_t opus[2] = {0x78, 1};
@@ -225,8 +223,8 @@ static void test_replay_after_restart(void) {
 
 static void test_sender_id_collision(void) {
   reset();
-  node_t *a = add_node(&key_a, "A", "");
-  node_t *b = add_node(&key_a, "B", "");
+  node_t *a = add_node(&key_a, "A");
+  node_t *b = add_node(&key_a, "B");
   b->e.sender_id = a->e.sender_id; /* both picked the same id */
   run(100);
   CHECK(a->e.sender_id != b->e.sender_id);
@@ -237,13 +235,13 @@ static void test_sender_id_collision(void) {
 
 static void test_multicast(void) {
   reset();
-  node_t *a = add_node(&key_a, "A", "");
-  node_t *b = add_node(&key_a, "B", "");
-  node_t *c = add_node(&key_a, "C", "");
+  node_t *a = add_node(&key_a, "A");
+  node_t *b = add_node(&key_a, "B");
+  node_t *c = add_node(&key_a, "C");
   a->e.multicast = b->e.multicast = c->e.multicast = true;
   run(100);
   q_len = 0;
-  lc_target_t t = {LC_TARGET_ALL, 0, ""};
+  lc_target_t t = {LC_TARGET_ALL, 0};
   lc_talk_t talk;
   lc_talk_begin(&a->e, &talk, &t);
   uint32_t tx = a->e.stats.tx;
@@ -257,13 +255,12 @@ static void test_multicast(void) {
 
 static void test_monitor(void) {
   reset();
-  node_t *a = add_node(&key_a, "A", "");
-  node_t *b = add_node(&key_a, "B", "kids");
-  node_t *m = add_node(&key_a, "HA", "");
-  lc_engine_set_identity(&m->e, "HA", "", LC_CAP_CAPTURE | LC_CAP_MONITOR);
+  node_t *a = add_node(&key_a, "A");
+  node_t *b = add_node(&key_a, "B");
+  node_t *m = add_node(&key_a, "HA");
+  lc_engine_set_identity(&m->e, "HA", LC_CAP_CAPTURE | LC_CAP_MONITOR);
   run(100);
-  lc_target_t t;
-  lc_target_parse("zone:kids", &t);
+  lc_target_t t = {LC_TARGET_DEVICE, b->e.sender_id};
   lc_talk_t talk;
   lc_talk_begin(&a->e, &talk, &t);
   uint8_t opus[2] = {0x78, 1};
@@ -274,7 +271,7 @@ static void test_monitor(void) {
   CHECK_EQ(m->audio, 0);
   CHECK_EQ(m->starts, 1);
   CHECK_EQ(m->stops, 1);
-  CHECK(m->last_target.kind == LC_TARGET_ZONE);
+  CHECK(m->last_target.kind == LC_TARGET_DEVICE);
 }
 
 void test_engine(void) {

@@ -1,7 +1,7 @@
 announce:
   fields:
     target:
-      example: "zone:kids"
+      example: "Kitchen, Workshop"
       default: "all"
       selector:
         text:

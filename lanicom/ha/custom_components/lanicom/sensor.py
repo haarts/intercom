@@ -44,7 +44,7 @@ class RttSensor(LanicomEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        return {"address": self.peer.address, "zones": self.peer.zones, "device_id": self.peer.id_hex}
+        return {"address": self.peer.address, "device_id": self.peer.id_hex}
 
 
 class LastSeenSensor(LanicomEntity, SensorEntity):

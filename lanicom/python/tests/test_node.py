@@ -30,9 +30,9 @@ def can_bind_loopback_aliases():
 pytestmark = pytest.mark.skipif(not can_bind_loopback_aliases(), reason="needs 127.0.0.0/8 loopback aliases (Linux)")
 
 
-def make(i, key=KEY, zones=(), caps=CAP_PLAYBACK | CAP_CAPTURE, peers=None):
+def make(i, key=KEY, caps=CAP_PLAYBACK | CAP_CAPTURE, peers=None):
     others = [h for h in HOSTS if h != HOSTS[i]] if peers is None else peers
-    cfg = NodeConfig(name=f"n{i}", zones=list(zones), caps=caps, port=PORT, bind=HOSTS[i], broadcast=None, static_peers=others)
+    cfg = NodeConfig(name=f"n{i}", caps=caps, port=PORT, bind=HOSTS[i], broadcast=None, static_peers=others)
     return Node(key, cfg)
 
 
@@ -57,10 +57,10 @@ def verified(a, b):
 
 
 async def test_discovery_and_verification():
-    a, b, c = await started(make(0, zones=["kitchen"]), make(1, zones=["kids"]), make(2))
+    a, b, c = await started(make(0), make(1), make(2))
     try:
         await wait_for(lambda: all(verified(x, y) for x in (a, b, c) for y in (a, b, c) if x is not y))
-        assert a.peers.get(b.sender_id).zones == ["kids"]
+        assert a.peers.get(b.sender_id).name == "n1"
         assert a.peers.get(b.sender_id).rtt_ms is not None
     finally:
         for n in (a, b, c):
@@ -68,7 +68,7 @@ async def test_discovery_and_verification():
 
 
 async def test_audio_targets_and_events():
-    a, b, c = await started(make(0), make(1, zones=["kids"]), make(2, zones=["kitchen"]))
+    a, b, c = await started(make(0), make(1), make(2))
     got = {b.sender_id: [], c.sender_id: []}
     events = []
     for n in (b, c):
@@ -77,7 +77,7 @@ async def test_audio_targets_and_events():
         n.on_talk_stop = lambda peer, sid, n=n: events.append((n.config.name, "stop"))
     try:
         await wait_for(lambda: verified(a, b) and verified(a, c))
-        talk = a.start_talk(Target(zone="kids"))
+        talk = a.start_talk(Target(device=b.sender_id))
         for i in range(5):
             assert talk.send_frame(b"\x78\x01\x02", 160) == 1
         talk.stop()
@@ -85,7 +85,7 @@ async def test_audio_targets_and_events():
         assert got[c.sender_id] == []
         ts = [t for _, t, _ in got[b.sender_id]]
         assert [x - ts[0] for x in ts] == [0, 480, 960, 1440, 1920]
-        assert events.count(("n1", "start", "zone:kids")) == 1  # 3 copies, deduped
+        assert events.count(("n1", "start", f"device:{b.sender_id:08x}")) == 1  # 3 copies, deduped
         assert events.count(("n1", "stop")) == 1
 
         talk = a.start_talk(Target.everyone())
@@ -189,18 +189,18 @@ async def test_peer_reboot_is_reverified():
 async def test_monitor_gets_talk_metadata_but_no_audio():
     from lanicom import CAP_MONITOR
 
-    a, b, m = await started(make(0), make(1, zones=["kids"]), make(2, caps=CAP_CAPTURE | CAP_MONITOR))
+    a, b, m = await started(make(0), make(1), make(2, caps=CAP_CAPTURE | CAP_MONITOR))
     events, audio = [], []
     m.on_talk_start = lambda peer, msg: events.append(("start", str(msg.target)))
     m.on_talk_stop = lambda peer, sid: events.append(("stop",))
     m.on_audio = lambda *args: audio.append(args)
     try:
         await wait_for(lambda: verified(a, b) and verified(a, m))
-        talk = a.start_talk(Target(zone="kids"))
+        talk = a.start_talk(Target(device=b.sender_id))
         assert talk.send_frame(b"\x78\x01", 160) == 1  # audio only to b
         talk.stop()
         await wait_for(lambda: ("stop",) in events)
-        assert events == [("start", "zone:kids"), ("stop",)]
+        assert events == [("start", f"device:{b.sender_id:08x}"), ("stop",)]
         assert audio == []
     finally:
         for n in (a, b, m):

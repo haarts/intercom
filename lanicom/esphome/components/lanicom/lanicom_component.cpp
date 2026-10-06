@@ -74,8 +74,6 @@ void LanicomComponent::setup() {
   }
   if (this->name_text_ != nullptr)
     this->name_text_->add_on_state_callback([this](const std::string &) { this->identity_dirty_ = true; });
-  if (this->zones_text_ != nullptr)
-    this->zones_text_->add_on_state_callback([this](const std::string &) { this->identity_dirty_ = true; });
 #endif
   this->apply_identity_();
 
@@ -127,19 +125,16 @@ void LanicomComponent::dump_config() {
 }
 
 void LanicomComponent::apply_identity_() {
-  std::string name = this->name_, zones = this->zones_;
+  std::string name = this->name_;
 #ifdef USE_TEXT
   if (this->name_text_ != nullptr && !this->name_text_->state.empty())
     name = this->name_text_->state;
-  if (this->zones_text_ != nullptr && this->zones_text_->has_state())
-    zones = this->zones_text_->state;
 #endif
   uint32_t caps = (this->speaker_ != nullptr ? LC_CAP_PLAYBACK : 0) | (this->mic_ != nullptr ? LC_CAP_CAPTURE : 0);
   Lock lock(this->engine_mutex_);
   this->name_ = name;
-  this->zones_ = zones;
   if (this->ready_)
-    lc_engine_set_identity(&this->engine_, name.c_str(), zones.c_str(), caps);
+    lc_engine_set_identity(&this->engine_, name.c_str(), caps);
 }
 
 void LanicomComponent::on_shutdown() {
@@ -194,7 +189,7 @@ void LanicomComponent::loop() {
 void LanicomComponent::start_talking(const std::string &target) {
   lc_target_t t;
   if (lc_target_parse(target.c_str(), &t) != 0) {
-    ESP_LOGW(TAG, "Bad target '%s' (use all, zone:<name> or device:<id>)", target.c_str());
+    ESP_LOGW(TAG, "Bad target '%s' (use all or device:<id>)", target.c_str());
     return;
   }
   if (this->mic_ == nullptr)
@@ -399,7 +394,7 @@ bool LanicomComponent::restart_engine_() {
       ESP_LOGW(TAG, "Static peer '%s' is not an IPv4 address", peer.c_str());
   }
   uint32_t caps = (this->speaker_ != nullptr ? LC_CAP_PLAYBACK : 0) | (this->mic_ != nullptr ? LC_CAP_CAPTURE : 0);
-  lc_engine_set_identity(&this->engine_, this->name_.c_str(), this->zones_.c_str(), caps);
+  lc_engine_set_identity(&this->engine_, this->name_.c_str(), caps);
   this->peer_count_ = 0;
   this->ready_ = true;
   return true;

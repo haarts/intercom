@@ -39,7 +39,8 @@ Don't skip the passwords. Someone on your network who could change the key and
 switch on "Talk" could listen in on the room.
 
 To bake the key in, add `-s network_key 'abcde-fghij-...'` after `esphome`.
-To set what the button talks to, add `-s ptt_target zone:kids`.
+To set what the button talks to, add `-s ptt_target device:<id>` (the id is in
+the other device's **Intercom peer list**, or from `lanicom list`).
 
 ## 3. Set the key
 
@@ -47,8 +48,7 @@ To set what the button talks to, add `-s ptt_target zone:kids`.
 2. Open `http://lanicom-p4-xxxxxx.local/` and log in as `admin` with your `web_password`. The suffix is printed in the flash
    log; your router's device list also shows the device.
 3. Paste the key into **Network key**.
-4. Optionally set **Intercom name** (for example "Kitchen") and **Intercom
-   zones** (for example `downstairs,kitchen`).
+4. Optionally set **Intercom name** (for example "Kitchen").
 
 Within a few seconds, **Intercom peers** shows the other devices. Hold the
 button to talk.
@@ -65,7 +65,7 @@ button to talk.
 ```yaml
 action: lanicom.announce
 data:
-  target: zone:kids          # all | zone:<name> | device:<id> | a device name
+  target: Kitchen, Workshop   # device names, device:<id>, or all
   media: media-source://tts/tts.google_translate_en_com?message=Dinner%20is%20ready
 ```
 

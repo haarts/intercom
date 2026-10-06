@@ -25,11 +25,9 @@ def parse_target(text: str) -> Target:
     if text == "all":
         return Target.everyone()
     kind, _, value = text.partition(":")
-    if kind == "zone" and value:
-        return Target(zone=value)
     if kind == "device" and value:
         return Target(device=parse_sender_id(value))
-    raise argparse.ArgumentTypeError("target is 'all', 'zone:<name>' or 'device:<id>'")
+    raise argparse.ArgumentTypeError("target is 'all' or 'device:<id>'")
 
 
 def load_key(args) -> NetworkKey:
@@ -63,7 +61,6 @@ def persistent_sender_id() -> int | None:
 def make_node(args, caps: int) -> Node:
     config = NodeConfig(
         name=args.name,
-        zones=[z for z in args.zones.split(",") if z] if args.zones else [],
         caps=caps,
         port=args.port,
         bind=args.bind,
@@ -149,7 +146,7 @@ def _need_sounddevice():
 
 
 def print_events(node: Node) -> None:
-    node.on_peer_added = lambda p: print(f"+ {p.id_hex} {p.name!r} {p.addr[0]} zones={','.join(p.zones) or '-'}")
+    node.on_peer_added = lambda p: print(f"+ {p.id_hex} {p.name!r} {p.addr[0]}")
     node.on_peer_removed = lambda p: print(f"- {p.id_hex} {p.name!r}")
     node.on_talk_start = lambda p, m: print(f"> {p.name or p.id_hex} talking to {m.target}")
     prev = node.on_talk_stop
@@ -166,11 +163,11 @@ async def cmd_list(args) -> None:
     node = make_node(args, caps=0)
     await node.start()
     await asyncio.sleep(args.wait)
-    print(f"{'id':8}  {'name':20} {'address':15} {'zones':20} {'rtt':>7}")
+    print(f"{'id':8}  {'name':20} {'address':15} {'rtt':>7}")
     for p in sorted(node.peers, key=lambda p: p.name):
         if p.verified:
             rtt = f"{p.rtt_ms:.1f}ms" if p.rtt_ms is not None else "-"
-            print(f"{p.id_hex}  {p.name[:20]:20} {p.addr[0]:15} {','.join(p.zones)[:20]:20} {rtt:>7}")
+            print(f"{p.id_hex}  {p.name[:20]:20} {p.addr[0]:15} {rtt:>7}")
     dropped = {k: v for k, v in node.stats.items() if k in ("foreign", "auth", "malformed", "replay")}
     if dropped:
         print(f"dropped: {dropped}")
@@ -272,7 +269,6 @@ def main(argv=None) -> None:
         p.add_argument("--key", help="network key (default: $LANICOM_KEY or ~/.config/lanicom/key)")
         p.add_argument("--key-file")
         p.add_argument("--name", default=socket.gethostname())
-        p.add_argument("--zones", default="", help="comma-separated zones this peer belongs to")
         p.add_argument("--port", type=int, default=PORT)
         p.add_argument("--bind", default="0.0.0.0", help="local address to listen on")
         p.add_argument("--peer", action="append", help="static peer host[:port] (repeatable)")
@@ -285,7 +281,7 @@ def main(argv=None) -> None:
     p = common(sub.add_parser("listen", help="play what others say"))
     p.add_argument("--jitter-ms", type=int, default=30)
     p = common(sub.add_parser("talk", help="talk (Enter toggles) and listen"))
-    p.add_argument("--to", type=parse_target, default=Target.everyone(), help="all | zone:<name> | device:<id>")
+    p.add_argument("--to", type=parse_target, default=Target.everyone(), help="all | device:<id>")
     p.add_argument("--jitter-ms", type=int, default=30)
     p.add_argument("--bitrate", type=int, default=24000)
     p = common(sub.add_parser("record", help="record what peers say to a WAV file"))

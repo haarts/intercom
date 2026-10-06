@@ -6,14 +6,12 @@
         "description": "Home Assistant joins the intercom as a peer. Use the same network key as the devices (create one with `lanicom keygen`).",
         "data": {
           "key": "Network key",
-          "name": "Name shown to the other devices",
-          "zones": "Zones (comma-separated, optional)"
+          "name": "Name shown to the other devices"
         }
       }
     },
     "error": {
-      "key_too_short": "The key is too short; use the key the devices have.",
-      "bad_zones": "At most 8 zones of at most 16 characters."
+      "key_too_short": "The key is too short; use the key the devices have."
     },
     "abort": {
       "already_configured": "This intercom network is already set up."
@@ -33,7 +31,7 @@
       "name": "Announce",
       "description": "Play an audio file, URL or text-to-speech message on intercom devices.",
       "fields": {
-        "target": { "name": "Target", "description": "all, zone:<name>, device:<id> or a device name." },
+        "target": { "name": "Target", "description": "One or more device names (comma-separated), device:<id>, or all." },
         "media": { "name": "Media", "description": "A URL or media-source ID (including TTS)." },
         "bitrate": { "name": "Bitrate", "description": "Opus bitrate." }
       }
