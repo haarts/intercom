@@ -106,7 +106,7 @@ as fine for conversation.
 | 1 | Spec, proto, vectors | **Done.** PROTOCOL.md, lanicom.proto, 3 keys, 4 packets, 9 invalid packets, 9 control and 4 replay vectors. |
 | 2 | C core with host tests | **Done.** 261 checks under ASan/UBSan: vectors, codec fuzzing, jitter, mixer, and engines on an in-memory LAN (discovery, zones, wrong key, expiry, replay after restart, id collision, multicast, monitor). It cross-compiles for the P4 with `-Werror` against ESP-IDF 5.5.5. |
 | 3 | Python library and CLI | **Done.** 35 tests: vectors, protobuf cross-check, real-UDP nodes on 127.0.0.x, a loopback latency test, Python↔C interop through `lanicom_tool`, and a CLI send→record end-to-end test. |
-| 4 | Firmware bring-up | **Code written; needs the board.** The component compiles (checked with the RISC-V toolchain and generated `sdkconfig.h`), and the YAML validates and generates. A full `esphome compile` couldn't run in the build sandbox (the ESP-IDF component registry is blocked there); CI does it. |
+| 4 | Firmware bring-up | **Code written; needs the board.** `esphome compile lanicom-p4.yaml` builds (ESPHome 2026.7.1, ESP-IDF 5.5.5): RAM 20.7%, flash 11.7% (947 KB). The only warnings come from micro-opus. CI isn't enabled on the repo, so build by hand. |
 | 5 | Firmware networking | **Needs the board.** Talk with the Linux CLI over Ethernet, then over Wi-Fi (`esp32_hosted` via the C6; not configured yet). |
 | 6 | Provisioning | **Done (ESPHome web page + `keygen --qr`); needs the board.** |
 | 7 | Latency validation | **Needs the board.** Click test: `tools/voicetest/speak.py` plays a click, then compare `lanicom record` against an external recorder at the far speaker. Do it with and without the low-latency I2S override. |
