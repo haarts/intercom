@@ -1,135 +1,148 @@
 # Buttons, pairing and LED patterns (design, not built yet)
 
-How the four illuminated buttons on a wall box get linked to other wall boxes, and what
-their LED rings show. Captured 2026-10-07. Nothing here is implemented; the firmware still
-has one PTT button with a fixed target.
+How the illuminated buttons on a wall box get linked to other wall boxes, and what their
+LED rings show. Captured 2026-10-07. Nothing here is implemented; the firmware still has
+one PTT button with a fixed target.
 
-## The idea
+## Decided
 
-A new device comes out of the box with nothing linked: all four rings are off and the
-buttons do nothing. You link two buttons, on two devices, by long-pressing both:
-
-1. On device A, hold a button for 5 s. Its ring blinks slowly: it is in pairing mode.
-2. Walk to device B and hold a button there for 5 s.
-3. Both rings flash to confirm. The two buttons are now linked: pressing A's button talks
-   to B, and pressing B's button talks to A. Each ring now shows the other device's state.
-
-No app, no web page, no Home Assistant needed. The two devices only need to be on the same
-network with the same network key (see [friends.md](friends.md)).
+- **Buttons are the only way to call.** A device can only talk to devices that are on one
+  of its buttons. There are no zones and no "all" in the user interface.
+- **Group calls:** hold two, three or four buttons at the same time to talk to all of
+  those partners at once.
+  - The buttons don't have to go down together. A button pressed during a talk adds its
+    partners to the running stream (they get a `TalkStart`).
+  - Letting go of a button removes its partners again. The talk ends when the last button
+    is released.
+- **Devices with one button exist.** The house plan:
+  - kitchen and workshop, 4 buttons each;
+  - one device in each child's room, with 1 button.
+- **Configuration beyond pairing** goes through ESPHome entities. They appear on the
+  device's built-in web page (`web_server`, already enabled) and in Home Assistant. There
+  is no custom page for now.
+- **Whole-device states** (booting, no network, ...) use all rings together.
 
 ## Pieces it builds on
 
 - **Device identity:** every device has a `sender_id`, random at first boot and then saved
-  ([PROTOCOL.md](../spec/PROTOCOL.md) §3). A link stores the partner's `sender_id` and its
-  button number, so it survives reboots and IP changes.
-- **Talking:** a linked button talks with target `device:<sender_id>`, which the protocol
-  already supports (§6, Addressing).
-- **Network:** each device gets its IP by DHCP over Ethernet and is reachable as
-  `<name>.local`. ESPHome's `web_server` is already enabled.
+  ([PROTOCOL.md](../spec/PROTOCOL.md) §3). A link stores the partner's `sender_id`, so it
+  survives reboots and IP changes.
+- **Talking:** a button talks with target `device:<sender_id>` for each of its partners.
+  The protocol already supports this (§6, Addressing).
+- **Network:** each device gets its IP by DHCP over Ethernet and is reachable as `<name>.local`.
 
-## Behaviour
+## Pairing (open: leading proposal)
 
-### Per button
+A new device comes out of the box with nothing linked: its rings are off and its buttons
+do nothing.
 
-A button is either **unlinked** or **linked** to (partner `sender_id`, partner button).
-The links are saved in flash.
+### The problem
 
-| Action | Unlinked button | Linked button |
-|---|---|---|
-| Short press / hold | Nothing (error flash) | Talk to the partner while held |
-| Hold 5 s | Pairing mode | Talks the whole time; no pairing (see "Holding while talking") |
-| Hold it plus any other button, 5 s | Pairing mode | Pairing mode (re-link) |
-| Hold it plus any other button, 10 s | — | Unlink |
+The first idea was to hold a button for 5 s on both devices. It fails in two ways:
 
-**Holding while talking:** on a linked button, a plain long press has to stay a long
-talk, or someone who talks for 5 s would end up pairing. So on a linked button only the
-two-button chord starts pairing. On an unlinked button the plain 5 s hold is safe, because
-there is nothing to talk to.
+1. **A linked button can't use a long hold to pair.** On a linked button, a long hold is a
+   long talk, so anyone who talks for 5 s would start pairing. A separate gesture for
+   linked buttons (a two-button chord) means two ways to pair, which is confusing.
+2. **A 1-button device can only pair once.** After that its button is linked, and a chord
+   is impossible with one button. Yet in the house plan, each child's button should reach
+   both the kitchen and the workshop.
 
-### Pairing
+### Proposal: only the device that starts needs a free button
 
-- **Pairing mode** lasts 60 s, or until it succeeds or you short-press the button to cancel.
-- **While in pairing mode** a device broadcasts a `PairOffer` (its button number, a random
-  nonce) every second.
-- **The second device to enter pairing mode** sees the first one's offer. It answers with a
-  `PairAccept` to the first device, unicast (the offer's nonce, its own button number).
-- **The first device** checks the nonce, saves the link and replies `PairConfirm`. The
-  second device saves the link when that arrives. Both flash "linked".
-- **Two devices entering pairing mode at the same moment:** the one with the lower
-  `sender_id` accepts.
-- **Three or more devices in pairing mode at once:** the accepter can't tell which offer
-  is meant. It does nothing and flashes the error pattern; try again.
-- **Re-linking or unlinking a button** sends an `Unlink` to the old partner, which clears
-  its side too. If the old partner is offline, it keeps a stale link. It shows that
-  partner as offline until the button is re-linked or unlinked there.
-- **Security:** all of this is ordinary CONTROL traffic, so only devices with the network
-  key can pair. The 5 s hold on both devices is the user's confirmation.
+1. On device A, hold an **unlinked** button for 5 s. A broadcasts a `PairOffer`. That
+   button's ring blinks slowly.
+2. **Every other device** that hears the offer blinks all its rings together: "someone
+   wants to pair". While they blink, pressing a button doesn't talk; it accepts.
+3. On device B, press the button to link, whether it's linked already or not. Both devices
+   flash to confirm:
+   - A's button now calls B;
+   - B's button now calls A, as well as any partners it already had.
+4. All other devices stop blinking. The window closes after the first accept, or after 60 s.
+
+For the house plan:
+- the kitchen and the workshop each start a pairing from a free button;
+- in each child's room you press the one button to accept;
+- the child's button ends up calling both the kitchen and the workshop.
+
+**Trade-off:** for up to 60 s, every device in the house blinks and turns its next press
+into an accept. That's visible, which is good, but a child pressing their button at that
+moment gets linked by accident. It shows, though, and you remove it on the config page.
+
+**Removing a link:** on the config page (per button: its partners, with "remove").
+The partner is told with an `Unlink`, so its side goes too. If the partner is offline, it
+keeps a stale link until it comes back and is told.
+
+**Still open:**
+- Is the house-wide blink acceptable, or should accepting need a longer hold on the
+  responder (for example 2 s)? A longer hold costs nothing in talking, because accept mode
+  isn't talk mode.
+- Should a button have a maximum number of partners?
 
 ### Protocol additions (draft)
 
-Three new `Control` messages, to be added to `lanicom.proto` and PROTOCOL.md as v1.1.
-Old devices skip unknown fields, so this is backwards compatible.
+To be added to `lanicom.proto` and PROTOCOL.md as v1.1. Old devices skip unknown messages,
+so this is backwards compatible.
 
 ```proto
-message PairOffer  { uint32 button = 1; fixed64 nonce = 2; }     // broadcast, 1/s while pairing
-message PairAccept { fixed64 nonce = 1; uint32 button = 2; }     // unicast to the offerer
-message PairConfirm{ fixed64 nonce = 1; }                        // unicast back
-message Unlink     { uint32 button = 1; }                        // "forget your link to my button N"
+message PairOffer   { fixed64 nonce = 1; uint32 button = 2; bool cancel = 3; } // broadcast 1/s while open
+message PairAccept  { fixed64 nonce = 1; uint32 button = 2; }                   // unicast to the offerer
+message PairConfirm { fixed64 nonce = 1; }                                      // unicast back; closes the window
+message Unlink      { uint32 button = 1; }  // "remove me from the button that links to my button N"
 ```
+
+- **Who closes the window:** the offerer sends one last `PairOffer` with `cancel = true` after
+  confirming, after a timeout, or when it is cancelled. That stops the blinking everywhere.
+- **Two offers at once:** a device that hears offers from two devices shows the error
+  pattern and accepts neither.
+- **Security:** all of this is ordinary CONTROL traffic, so only devices with the network
+  key take part. The physical presses on both devices are the user's confirmation.
+
+### Receiving
+
+A device plays audio only from its partners. A stream from anyone else is dropped.
+Whether Home Assistant announcements are the one exception is still open.
 
 ## LED patterns
 
-Each ring belongs to one button. Brightness is set by PWM through the carrier's transistors.
-The patterns are chosen to be easy to tell apart at a glance and in peripheral vision.
+Each ring belongs to one button. Brightness is set by PWM through the carrier's
+transistors. The patterns use different rhythms, not just different brightness. That way a
+1-button device can show every state on its one ring.
 
-### Per-button states
+### Per button
 
 | State | Pattern | Meaning |
 |---|---|---|
-| Unlinked | Off | This button isn't linked to anything |
-| Linked, partner online | Steady dim (~10 %) | Ready to talk |
-| Linked, partner offline | Dim, with a short dip every 3 s | Partner hasn't been heard from for 30 s |
-| Talking | Full on | You're holding the button and audio is going out |
-| Receiving | Breathing (≈1 Hz, dim ↔ full) | The partner on this button is talking to you |
-| Pairing mode | Slow blink (1 Hz, 50 %) | Waiting for the other device |
+| Unlinked | Off | No partners |
+| Linked, partners online | Steady dim (~10 %) | Ready to talk |
+| Linked, a partner offline | Dim, with a short dip every 3 s | A partner hasn't been heard from for 30 s |
+| Talking | Full on | Held; audio is going out |
+| Receiving | Breathing (≈1 Hz, dim ↔ full) | A partner on this button is talking to you |
+| Offering to pair | Slow blink (1 Hz) | This button started a pairing; waiting |
 | Linked (just now) | 3 quick flashes, then steady dim | Pairing succeeded |
-| Error | Fast flicker (8 Hz) for 1 s, then back to the previous state | Pressed an unlinked button, pairing timed out, or more than one offer was seen |
+| Error | Fast flicker (8 Hz) for 1 s, then back | Pressed an unlinked button, pairing timed out, or two offers were seen |
 
-### Whole-device states (all four rings together)
+### Whole device (all rings together)
 
 These override the per-button states.
 
 | State | Pattern | Meaning |
 |---|---|---|
-| Booting | One sweep, 1 → 4 | Starting up |
-| No network | Running light, 1 → 4, repeating | No Ethernet link or no IP |
-| Not provisioned | All rings slow blink in unison | No network key set (the original plan's "not provisioned") |
-| Incoming call, unlinked sender | All rings breathe together | Someone talks to this device who isn't on any of its buttons (a zone or `all` call, or Home Assistant) |
+| Booting | One fade up and down (on 4 buttons: a sweep 1 → 4) | Starting up |
+| Someone wants to pair | Double blink, repeating | Press a button to accept |
+| No network | Short blink every 2 s (on 4 buttons: a running light) | No Ethernet link or no IP |
+| Not provisioned | Triple blink, repeating | No network key set |
 
 The original plan had four states: idle (dim), talking (on), receiving (pulse) and not
-provisioned (blink). They map onto "linked, partner online", "talking", "receiving" and
+provisioned (blink). They map onto "linked, partners online", "talking", "receiving" and
 "not provisioned" above.
 
-## Later: configuration page
+## Configuration (ESPHome entities)
 
-Pairing by button covers the common case. A page on the device itself would cover the rest:
+These show up on the device's own web page and in Home Assistant:
 
 - **Per button:**
-  - see and change the link (a list of the devices on the network, or a zone, or "all");
-  - clear the link;
-  - set the ring's idle brightness.
-- **Device:** name, zones, and an LED brightness for day and night.
-
-The cheapest way is to expose these as ESPHome entities (`select`, `number`, `button`).
-They then appear automatically on the built-in `web_server` page and in Home Assistant.
-A custom page (ESPHome `web_server` version 3 with its own JS) can come later, if the
-built-in one is too plain.
-
-## Open questions
-
-- Should the button numbering in links survive swapping a P4 between carriers? (The
-  `sender_id` lives on the P4, so a swapped P4 takes its links with it.)
-- Should a linked button that is held while its partner is offline still try (maybe the
-  partner just rebooted), or refuse with the error flash?
-- Is one link per button enough, or should a button be able to call a zone, for example
-  "upstairs"? The config page could allow it; pairing by button would stay one-to-one.
+  - its partners (by device name), each with a remove action;
+  - the ring's idle brightness.
+- **Device:**
+  - its name;
+  - one brightness for all rings, maybe with a night setting.
