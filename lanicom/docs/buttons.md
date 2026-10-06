@@ -20,8 +20,11 @@ one PTT button with a fixed target.
   - one device in each child's room, with 1 button.
   - A child can only call the partner on their one button (for example the kitchen).
 - **Home Assistant announcements reach any device.** Pairing is about buttons only.
-- **No unpairing per button.** To change links, reset the device's links and pair its
-  buttons again. Re-pairing four buttons to fix one is rare enough to accept.
+- **No reset or unpair gesture on the buttons.** Kids mash buttons, so every reset and
+  unpair goes through the device's web page or Home Assistant (see Reset). Buttons do
+  three things: talk, group talk, pair.
+- **The network key is baked in at flash time**, and can still be changed on the web
+  page. Friends get a device that just works and never need to see the page.
 - **Configuration beyond pairing** goes through ESPHome entities. They appear on the
   device's built-in web page (`web_server`, already enabled) and in Home Assistant.
 
@@ -80,32 +83,36 @@ message PairConfirm { fixed64 nonce = 1; }                     // unicast back; 
 
 message Link { uint32 button = 1; fixed32 partner = 2; uint32 partner_button = 3; }
 // Hello gets: repeated Link links = 7;
+// caps gets: bit 3 ANNOUNCER (Home Assistant)
 ```
 
-## Reset
+## Reset and unpair
 
-| How | What it clears | When |
-|---|---|---|
-| Hold any button for 30 s | All links (the device keeps its name, network key and identity) | Normal way; works on 1-button devices with the box closed |
-| "Reset links" on the web page or in Home Assistant | The same | When you're at a computer anyway |
-| "Factory reset" on the web page or in Home Assistant (ESPHome's standard one) | Everything: links, name, network key | Giving a device away, or starting over |
+No button gesture: a child pressing a glowing button five times, or holding it, must not
+be able to unlink the kitchen.
 
-**The 30 s hold:**
-- **0 to 20 s:** normal talk if the button is linked. If it isn't, the ring enters pairing
-  mode at 5 s.
-- **From 20 s:** the talk stops (or pairing is cancelled), and all rings flicker as a
-  countdown. Let go to cancel.
-- **At 30 s:** links cleared. All rings flash, then go off.
+| How | What it clears |
+|---|---|
+| "Unpair" next to a button, on the web page or in Home Assistant | That button's link |
+| "Factory reset" on the web page or in Home Assistant (ESPHome's `factory_reset` button) | Everything saved at runtime: links, brightness, and a network key or name changed on the page. Baked-in values (the key, the name) come back. |
+| Power-cycle the device 5 times within 10 s (ESPHome's `factory_reset: resets_required: 5`) | The same, for when the network side is broken. On PoE: toggle the switch port, or the cable. The rings flash on each count (`on_increment`). |
 
-A talk longer than 20 s gets cut, which is fine for an intercom.
+The partner's side of a removed link clears itself (see "Links heal themselves").
 
-## Receiving
+## Receiving and Home Assistant
 
-A device plays audio from the partners on its buttons, and Home Assistant announcements.
-A stream from anyone else is dropped.
+A device plays audio from the partners on its buttons, and from any peer that has the new
+`ANNOUNCER` capability bit (`caps` bit 3) in its `Hello`. That is Home Assistant. A stream
+from anyone else is dropped. Only devices with the network key can claim the bit.
 
-Telling an announcement apart needs a way to recognise Home Assistant: a capability bit
-in its `Hello`, still to be defined.
+Home Assistant addresses devices the way a group call works: it picks the set of recipients
+and sends each one a copy (unicast fan-out, as now). That can be one device, any list of
+devices, or all of them. Groupings such as "upstairs" are Home Assistant areas or labels,
+not something the devices know about.
+
+**Zones go away.** Nothing uses them any more: buttons talk to partners, and Home Assistant
+groups devices itself. The firmware drops its "Intercom zones" entity. The protocol can
+keep the field for compatibility, and mark it deprecated in v1.1.
 
 ## LED patterns
 
@@ -134,8 +141,8 @@ These override the per-button states.
 |---|---|---|
 | Booting | One fade up and down (on 4 buttons: a sweep 1 → 4) | Starting up |
 | Announcement | All rings breathe together | Home Assistant is talking to this device |
-| Reset countdown | Fast flicker, getting faster | A button has been held for 20 s; let go to cancel |
-| Links reset | Two long flashes, then off | Done |
+| Reset count | One flash per power cycle | Counting towards a factory reset |
+| Identify | All rings flash for 10 s | "Identify" pressed on the web page |
 | No network | Short blink every 2 s (on 4 buttons: a running light) | No Ethernet link or no IP |
 | Not provisioned | Triple blink, repeating | No network key set |
 
@@ -143,19 +150,30 @@ The original plan had four states: idle (dim), talking (on), receiving (pulse) a
 provisioned (blink). They map onto "linked, partner online", "talking", "receiving" and
 "not provisioned" above.
 
-## Configuration (ESPHome entities)
+## Web page (ESPHome entities)
 
-These show up on the device's own web page and in Home Assistant:
+ESPHome's `web_server` (version 3, password-protected) is already enabled. It shows every
+entity automatically, and the same entities appear in Home Assistant. Nothing here needs
+custom web code.
 
 - **Per button:**
-  - its partner (device name and button, read-only);
+  - its partner (device name and button) and whether it is online;
+  - "Unpair";
   - the ring's idle brightness.
 - **Device:**
-  - its name;
-  - one brightness for all rings, maybe with a night setting;
-  - "Reset links" and "Factory reset" buttons.
+  - name;
+  - network key (defaults to the baked-in one);
+  - speaker volume and mic gain (already there);
+  - night brightness for the rings, and the hours it applies (needs the time from Home
+    Assistant or SNTP);
+  - "Identify": all rings flash for 10 s, to find which box this is;
+  - "Restart" (already there) and "Factory reset".
+- **Status (read-only):** IP address, peers, dropped packets (already there), firmware
+  version, uptime.
+- **Firmware update:** a file upload on the page (ESPHome `ota: platform: web_server`), next
+  to the network OTA. Once the P4 is in the box, USB is out of reach.
 
 ## Open
 
-- Is 30 s right for the reset hold, and 20 s for the talk cut-off?
-- How Home Assistant identifies itself so devices accept its announcements (a capability bit).
+- What the 1-button devices (children's rooms) do with the extra power-cycle reset: is
+  5 cycles within 10 s safe against a flaky PoE switch or a power cut that flickers?
