@@ -136,4 +136,10 @@ The two copies in Downloads are identical. The file is 180 × 90 mm, with layers
       and measure latency with and without `tools/make_lowlatency_i2s.py`. Stock ESPHome I2S queues about 50 ms
       on the speaker (5 × 10 ms DMA, preloaded), so expect about 120 ms mouth-to-ear on stock and about 70 ms
       with the override.
+- [x] lanicom on the P4 (2026-10-06): flashed over the network (the old Mumble firmware's OTA had no password),
+      found the laptop and verified it in seconds (RTT 2.3 ms over Wi-Fi). The PTT button on GPIO22 talks to the
+      laptop's speakers, "perfectly". Voice test 0% WER. Click test, board sending half: ~34 ms stock, ~22-27 ms
+      with the low-latency I2S override. The override is **not** used: first find out whether ~120 ms
+      mouth-to-ear (estimated) is noticeable in half duplex. Fixed on the board: the speaker blocked the mic after
+      playback. Laptop needs `ufw allow 47100/udp`. Next: a speaker on the board, then two boxes in different rooms.
 - [ ] In HA: remove the old `intercom-p4-bringup` device, adopt `esp32-mumble-p4-e80332` (no API encryption yet).
