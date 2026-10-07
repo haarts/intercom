@@ -48,9 +48,14 @@ void LanicomComponent::setup() {
   // epoch (and so every nonce) unique even if the RNG were to repeat itself.
   this->pref_ = global_preferences->make_preference<Persisted>(fnv1_hash("lanicom_identity"), true);
   if (!this->pref_.load(&this->persisted_) || this->persisted_.sender_id == 0) {
-    do {
-      this->persisted_.sender_id = esp_random();
-    } while (this->persisted_.sender_id == 0);
+    // Derived from the MAC, so a factory reset keeps the id: partners then see this device's
+    // empty link list and drop their side (PROTOCOL.md, "Links heal themselves").
+    uint8_t mac[6];
+    get_mac_address_raw(mac);
+    uint32_t id = 2166136261u;
+    for (uint8_t b : mac)
+      id = (id ^ b) * 16777619u;
+    this->persisted_.sender_id = id != 0 ? id : 1;
     this->persisted_.boot_counter = 0;
   }
   this->persisted_.boot_counter++;
@@ -59,6 +64,21 @@ void LanicomComponent::setup() {
 
   if (this->name_.empty())
     this->name_ = App.get_friendly_name().empty() ? App.get_name().str() : App.get_friendly_name().str();
+
+  this->links_pref_ = global_preferences->make_preference<PersistedLinks>(fnv1_hash("lanicom_links"), true);
+  if (!this->links_pref_.load(&this->links_))
+    this->links_ = {};
+  for (size_t i = 0; i < this->button_sensors_.size(); i++) {
+    this->button_sensors_[i]->add_on_state_callback([this, i](bool pressed) {
+      if (!this->ready_)
+        return;
+      Lock lock(this->engine_mutex_);
+      if (pressed)
+        lc_buttons_press(&this->buttons_, (uint8_t) i, millis());
+      else
+        lc_buttons_release(&this->buttons_, (uint8_t) i, millis());
+    });
+  }
   this->pending_key_ = this->key_string_;
 #ifdef USE_TEXT
   if (this->key_text_ != nullptr) {
@@ -120,6 +140,9 @@ void LanicomComponent::dump_config() {
                 this->jitter_target_ms_, this->jitter_max_ms_);
   for (const auto &peer : this->static_peers_)
     ESP_LOGCONFIG(TAG, "  Static peer: %s", peer.c_str());
+  for (size_t i = 0; i < this->button_sensors_.size(); i++)
+    ESP_LOGCONFIG(TAG, "  Button %u: partner %08" PRIx32 " button %u", (unsigned) i + 1, this->links_.links[i].partner,
+                  this->links_.links[i].partner_button);
   if (this->pending_key_.empty())
     ESP_LOGW(TAG, "  No network key set");
 }
@@ -183,7 +206,134 @@ void LanicomComponent::loop() {
   else
     this->status_set_warning("Not running (is a network key set?)");
 
+  this->buttons_loop_();
+  this->update_rings_();
   this->manage_bus_();
+}
+
+// Buttons: pairing state lives in lc_buttons; here it is persisted and turned into talks.
+void LanicomComponent::buttons_loop_() {
+  if (this->button_sensors_.empty() || !this->ready_)
+    return;
+  bool links_changed = false, talk_changed = false;
+  uint32_t devices[LC_MAX_BUTTONS];
+  size_t n = 0;
+  {
+    Lock lock(this->engine_mutex_);
+    if (this->buttons_.links_changed) {
+      this->buttons_.links_changed = false;
+      for (size_t i = 0; i < LC_MAX_BUTTONS; i++)
+        this->links_.links[i] = this->buttons_.b[i].link;
+      links_changed = true;
+    }
+    if (this->buttons_.talk_changed) {
+      this->buttons_.talk_changed = false;
+      n = lc_buttons_talk_set(&this->buttons_, devices, LC_MAX_BUTTONS);
+      talk_changed = true;
+    }
+  }
+  if (links_changed) {
+    this->links_pref_.save(&this->links_);
+    global_preferences->sync();
+    for (size_t i = 0; i < this->button_sensors_.size(); i++)
+      ESP_LOGI(TAG, "Button %u: %s", (unsigned) i + 1, this->partner_summary(i).c_str());
+  }
+  if (!talk_changed)
+    return;
+  if (n == 0) {
+    this->stop_talking();
+    return;
+  }
+  if (this->mic_ == nullptr)
+    return;
+  {
+    Lock lock(this->engine_mutex_);
+    this->talk_devices_.assign(devices, devices + n);
+  }
+  if (!this->talk_requested_) {
+    this->talk_requested_ = true;
+    this->talk_begin_ = true;
+  } else {
+    this->talk_update_ = true;
+  }
+}
+
+void LanicomComponent::update_rings_() {
+  bool any = false;
+  for (auto *ring : this->button_rings_)
+    any |= ring != nullptr;
+  if (!any)
+    return;
+  uint32_t now = millis();
+  uint32_t rx[LC_RX_STREAMS];
+  size_t n_rx = 0;
+  for (auto &sender : this->rx_senders_) {
+    uint32_t v = sender.load();
+    if (v != 0)
+      rx[n_rx++] = v;
+  }
+  lc_led_state_t states[LC_MAX_BUTTONS] = {};
+  bool announcement = false;
+  if (this->ready_) {
+    Lock lock(this->engine_mutex_);
+    for (size_t k = 0; k < n_rx; k++) {
+      const lc_peer_t *p = lc_engine_find_peer(&this->engine_, rx[k]);
+      announcement |= p != nullptr && (p->info.caps & LC_CAP_ANNOUNCER);
+    }
+    for (size_t i = 0; i < this->button_rings_.size(); i++)
+      states[i] = lc_buttons_led(&this->buttons_, (uint8_t) i, this->transmitting_, rx, n_rx, now);
+  }
+  for (size_t i = 0; i < this->button_rings_.size(); i++) {
+    if (this->button_rings_[i] == nullptr)
+      continue;
+    float level;
+    if ((int32_t) (this->identify_until_ - now) > 0) {
+      level = now % 500 < 250 ? 1.0f : 0.0f;  // identify: all rings flash
+    } else if (!this->network_up_) {
+      level = now % 2000 < 100 ? 1.0f : 0.0f;  // no network: a short blink every 2 s
+    } else if (!this->ready_) {
+      uint32_t ph = now % 2000;  // no network key: triple blink
+      level = ph < 600 && ph % 200 < 100 ? 1.0f : 0.0f;
+    } else if (announcement) {
+      level = lc_led_level(LC_LED_RECEIVING, this->ring_idle_, now);  // all rings breathe together
+    } else {
+      level = lc_led_level(states[i], this->ring_idle_, now);
+    }
+    this->button_rings_[i]->set_level(level);
+  }
+}
+
+std::string LanicomComponent::partner_summary(size_t button) {
+  if (button >= this->button_sensors_.size())
+    return "";
+  Lock lock(this->engine_mutex_);
+  const lc_button_t *b = this->ready_ ? &this->buttons_.b[button] : nullptr;
+  if (b != nullptr && b->pairing)
+    return "Pairing...";
+  lc_button_link_t link = b != nullptr ? b->link : this->links_.links[button];
+  if (link.partner == 0)
+    return "Not linked";
+  const lc_peer_t *p = this->ready_ ? lc_engine_find_peer(&this->engine_, link.partner) : nullptr;
+  char buf[96];
+  bool online = p != nullptr && p->verified && p->announced;
+  if (online && p->info.name[0])
+    snprintf(buf, sizeof(buf), "%s, button %u", p->info.name, link.partner_button);
+  else
+    snprintf(buf, sizeof(buf), "%08" PRIx32 ", button %u%s", link.partner, link.partner_button,
+             online ? "" : " (offline)");
+  return buf;
+}
+
+void LanicomComponent::unpair(size_t button) {
+  if (button >= this->button_sensors_.size())
+    return;
+  Lock lock(this->engine_mutex_);
+  if (this->ready_) {
+    lc_buttons_unpair(&this->buttons_, (uint8_t) button);  // persisted by buttons_loop_
+  } else {
+    this->links_.links[button] = {};
+    this->links_pref_.save(&this->links_);
+  }
 }
 
 void LanicomComponent::start_talking(const std::string &target) {
@@ -197,6 +347,7 @@ void LanicomComponent::start_talking(const std::string &target) {
   {
     Lock lock(this->engine_mutex_);
     this->talk_target_ = target;
+    this->talk_devices_.clear();
   }
   this->talk_requested_ = true;
   this->talk_begin_ = true;
@@ -381,8 +532,14 @@ bool LanicomComponent::restart_engine_() {
   cb.talk_stop = cb_talk_stop;
   cb.audio = cb_audio;
   cb.sender_id_changed = cb_sender_id_changed;
+  cb.hello = cb_hello;
+  cb.control = cb_control;
   cb.ctx = this;
-  uint64_t epoch = (uint64_t) this->persisted_.boot_counter << 32 | esp_random();
+  // The boot counter starts again after a factory reset (the sender id doesn't): then use 64
+  // random bits, so the epoch can't repeat one from before the reset.
+  uint64_t epoch = this->persisted_.boot_counter > 1
+                       ? (uint64_t) this->persisted_.boot_counter << 32 | esp_random()
+                       : (uint64_t) esp_random() << 32 | esp_random();
   lc_engine_init(&this->engine_, &this->key_, this->persisted_.sender_id, epoch, &cb, millis());
   this->engine_.port = this->port_;
   this->engine_.multicast = this->multicast_;
@@ -395,6 +552,10 @@ bool LanicomComponent::restart_engine_() {
   }
   uint32_t caps = (this->speaker_ != nullptr ? LC_CAP_PLAYBACK : 0) | (this->mic_ != nullptr ? LC_CAP_CAPTURE : 0);
   lc_engine_set_identity(&this->engine_, this->name_.c_str(), caps);
+  if (!this->button_sensors_.empty()) {
+    lc_buttons_init(&this->buttons_, &this->engine_, (uint8_t) this->button_sensors_.size());
+    lc_buttons_restore(&this->buttons_, this->links_.links, this->button_sensors_.size(), millis());
+  }
   this->peer_count_ = 0;
   this->ready_ = true;
   return true;
@@ -426,6 +587,8 @@ void LanicomComponent::net_run_() {
       lc_engine_receive(&this->engine_, buf, (size_t) n, addr, millis());
     }
     lc_engine_tick(&this->engine_, millis());
+    if (!this->button_sensors_.empty())
+      lc_buttons_tick(&this->buttons_, millis());
   }
 }
 
@@ -460,9 +623,24 @@ void LanicomComponent::cb_sender_id_changed(void *ctx, uint32_t) {
   static_cast<LanicomComponent *>(ctx)->post_event_(EventType::SENDER_ID_CHANGED, nullptr);
 }
 
+void LanicomComponent::cb_hello(void *ctx, const lc_peer_t *peer, const lc_hello_t *hello) {
+  auto *self = static_cast<LanicomComponent *>(ctx);
+  if (!self->button_sensors_.empty())
+    lc_buttons_on_hello(&self->buttons_, peer, hello, millis());
+}
+
+void LanicomComponent::cb_control(void *ctx, const lc_peer_t *peer, const lc_control_t *msg) {
+  auto *self = static_cast<LanicomComponent *>(ctx);
+  if (!self->button_sensors_.empty())
+    lc_buttons_on_control(&self->buttons_, peer, msg, millis());
+}
+
 void LanicomComponent::cb_audio(void *ctx, const lc_peer_t *peer, uint32_t stream_id, uint32_t ts,
                                 const uint8_t *opus, size_t len) {
   auto *self = static_cast<LanicomComponent *>(ctx);
+  // A box with buttons plays its partners and announcers (Home Assistant) only.
+  if (!self->button_sensors_.empty() && !lc_buttons_accepts(&self->buttons_, peer->sender_id, peer->info.caps))
+    return;
   int samples = opus_packet_get_nb_samples(opus, (opus_int32) len, SAMPLE_RATE);  // parses the TOC only
   if (samples <= 0)
     return;
@@ -487,14 +665,17 @@ void LanicomComponent::cb_talk_stop(void *ctx, const lc_peer_t *peer, uint32_t s
 
 // --- rx callbacks (rx_mutex_ held) ---------------------------------------------------
 
-void LanicomComponent::cb_stream_begin(void *ctx, int slot, uint32_t, uint32_t) {
+void LanicomComponent::cb_stream_begin(void *ctx, int slot, uint32_t sender_id, uint32_t) {
   auto *self = static_cast<LanicomComponent *>(ctx);
   self->decoder_reset_[slot] = true;  // applied by the audio task before the first decode
   self->stream_began_ = true;
+  self->rx_senders_[slot] = sender_id;
 }
 
-void LanicomComponent::cb_stream_end(void *ctx, int, uint32_t, uint32_t) {
-  static_cast<LanicomComponent *>(ctx)->post_event_(EventType::RX_END, nullptr);
+void LanicomComponent::cb_stream_end(void *ctx, int slot, uint32_t, uint32_t) {
+  auto *self = static_cast<LanicomComponent *>(ctx);
+  self->rx_senders_[slot] = 0;
+  self->post_event_(EventType::RX_END, nullptr);
 }
 
 int LanicomComponent::cb_decode(void *ctx, int slot, lc_jb_kind_t kind, const uint8_t *data, size_t len,
@@ -562,12 +743,21 @@ void LanicomComponent::audio_run_() {
       if (this->talk_.active)
         lc_talk_end(&this->engine_, &this->talk_);  // new target while talking: start a new stream
       if (this->talk_requested_ && this->encoder_ != nullptr) {
-        lc_target_t target;
-        lc_target_parse(this->talk_target_.c_str(), &target);
-        lc_talk_begin(&this->engine_, &this->talk_, &target);
+        if (!this->talk_devices_.empty()) {
+          lc_talk_begin_devices(&this->engine_, &this->talk_, this->talk_devices_.data(), this->talk_devices_.size());
+        } else {
+          lc_target_t target;
+          lc_target_parse(this->talk_target_.c_str(), &target);
+          lc_talk_begin(&this->engine_, &this->talk_, &target);
+        }
         opus_encoder_ctl(this->encoder_, OPUS_RESET_STATE);
         this->transmitting_ = true;
       }
+    }
+    if (this->talk_update_.exchange(false) && this->talk_.active) {
+      Lock lock(this->engine_mutex_);  // a button pressed or released mid-talk
+      if (!this->talk_devices_.empty())
+        lc_talk_set_devices(&this->engine_, &this->talk_, this->talk_devices_.data(), this->talk_devices_.size());
     }
     while (this->talk_.active) {
       uint32_t r = this->capture_read_.load(std::memory_order_relaxed);

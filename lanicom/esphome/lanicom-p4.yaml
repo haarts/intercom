@@ -12,12 +12,9 @@
 substitutions:
   name: lanicom-p4
   friendly_name: Intercom
-  # PTT button between this header pin and GND. GPIO35 (BOOT) is Ethernet TXD1 on this board.
-  # On the carrier board (hardware/carrier) this is button 1; buttons 1-4 are GPIO23, 22, 21, 20
-  # and their LED rings GPIO5, 32, 4, 33.
-  ptt_pin: GPIO23
-  # What the PTT button talks to: all | device:<id>
-  ptt_target: all
+  # Buttons 1-4 on the carrier board (hardware/carrier), left to right: switches to GND on
+  # GPIO23, 22, 21, 20; LED rings switched by a transistor from GPIO5, 32, 4, 33.
+  # Pairing, LED patterns and the web page: docs/buttons.md.
   network_key: ""
 
 esphome:
@@ -35,6 +32,7 @@ esphome:
         - speaker.volume_set:
             id: p4_speaker
             volume: !lambda 'return id(speaker_volume).state / 100.0f;'
+        - lambda: 'id(intercom).set_ring_brightness(id(ring_brightness).state / 100.0f);'
 
 esp32:
   board: esp32-p4_r3  # rev3 silicon; pre-rev3 boards need `engineering_sample: true`
@@ -61,7 +59,7 @@ logger:
   hardware_uart: UART0  # USB-C is a CH343 UART bridge
 
 # Management (HA API, web page, OTA) must be authenticated: whoever can change the network
-# key and switch "Talk" on can turn the box into a room bug. Copy secrets.example.yaml
+# key or upload firmware can turn the box into a room bug. Copy secrets.example.yaml
 # to secrets.yaml and fill it in.
 #
 # Optional Home Assistant link. reboot_timeout 0: without HA the device must not reboot.
@@ -73,6 +71,17 @@ api:
 ota:
   - platform: esphome
     password: !secret ota_password
+  # Firmware upload on the web page: once the P4 is in its box, USB is out of reach.
+  - platform: web_server
+
+# Power-cycle the box 5 times within 10 s (e.g. toggle its PoE switch port) to clear everything
+# set at runtime: links, brightness, and a key or name changed on the web page. The rings
+# flash on each count.
+factory_reset:
+  resets_required: 5
+  max_delay: 10s
+  on_increment:
+    - lambda: 'id(intercom).identify(300);'
 
 # Settings page for people without Home Assistant: http://<name>.local/
 web_server:
@@ -159,10 +168,21 @@ lanicom:
   bitrate: 24000
   complexity: 3
   mic_warmup: 50ms  # the ES8311 settles fast
+  buttons:
+    - { button: button_1, ring: ring_1 }
+    - { button: button_2, ring: ring_2 }
+    - { button: button_3, ring: ring_3 }
+    - { button: button_4, ring: ring_4 }
   on_receive_start:
     - logger.log:
         format: "%s is talking"
         args: [name.c_str()]
+
+output:
+  - { platform: ledc, id: ring_1, pin: GPIO5, frequency: 1kHz }
+  - { platform: ledc, id: ring_2, pin: GPIO32, frequency: 1kHz }
+  - { platform: ledc, id: ring_3, pin: GPIO4, frequency: 1kHz }
+  - { platform: ledc, id: ring_4, pin: GPIO33, frequency: 1kHz }
 
 text:
   - platform: template
@@ -187,24 +207,25 @@ text:
 
 binary_sensor:
   - platform: gpio
-    id: ptt_button
-    name: "PTT"
-    pin:
-      number: ${ptt_pin}
-      mode: INPUT_PULLUP
-      inverted: true
-    filters:
-      - delayed_on_off: 20ms
-    on_press:
-      - lanicom.start_talking:
-          target: ${ptt_target}
-    on_release:
-      - lanicom.stop_talking:
-  # The other carrier buttons (2-4: GPIO22, GPIO21, GPIO20) would look like this:
-  #  - platform: gpio
-  #    pin: { number: GPIO22, mode: INPUT_PULLUP, inverted: true }
-  #    on_press: { lanicom.start_talking: { target: "device:8a3f01c2" } }
-  #    on_release: { lanicom.stop_talking: }
+    id: button_1
+    name: "Button 1"
+    pin: { number: GPIO23, mode: INPUT_PULLUP, inverted: true }
+    filters: [delayed_on_off: 20ms]
+  - platform: gpio
+    id: button_2
+    name: "Button 2"
+    pin: { number: GPIO22, mode: INPUT_PULLUP, inverted: true }
+    filters: [delayed_on_off: 20ms]
+  - platform: gpio
+    id: button_3
+    name: "Button 3"
+    pin: { number: GPIO21, mode: INPUT_PULLUP, inverted: true }
+    filters: [delayed_on_off: 20ms]
+  - platform: gpio
+    id: button_4
+    name: "Button 4"
+    pin: { number: GPIO20, mode: INPUT_PULLUP, inverted: true }
+    filters: [delayed_on_off: 20ms]
   - platform: template
     name: "Receiving"
     icon: "mdi:account-voice"
@@ -240,6 +261,30 @@ text_sensor:
   - platform: ethernet_info
     ip_address:
       name: IP Address
+  # Who each button is linked to.
+  - platform: template
+    name: "Button 1 partner"
+    icon: "mdi:link-variant"
+    update_interval: 2s
+    lambda: 'return id(intercom).partner_summary(0);'
+  - platform: template
+    name: "Button 2 partner"
+    icon: "mdi:link-variant"
+    update_interval: 2s
+    lambda: 'return id(intercom).partner_summary(1);'
+  - platform: template
+    name: "Button 3 partner"
+    icon: "mdi:link-variant"
+    update_interval: 2s
+    lambda: 'return id(intercom).partner_summary(2);'
+  - platform: template
+    name: "Button 4 partner"
+    icon: "mdi:link-variant"
+    update_interval: 2s
+    lambda: 'return id(intercom).partner_summary(3);'
+  - platform: version
+    name: "Firmware"
+    hide_timestamp: true
 
 number:
   # REG14: analog mic PGA (0-30 dB, 3 dB steps); REG16: ADC digital gain (0-42 dB, 6 dB steps).
@@ -270,6 +315,20 @@ number:
     set_action:
       - lambda: 'id(es8311_dac).write_byte(0x16, (uint8_t)(x / 6));'
   - platform: template
+    name: "Ring brightness"
+    id: ring_brightness
+    icon: "mdi:brightness-6"
+    entity_category: config
+    unit_of_measurement: "%"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 100
+    step: 5
+    initial_value: 10
+    set_action:
+      - lambda: 'id(intercom).set_ring_brightness(x / 100.0f);'
+  - platform: template
     name: "Speaker Volume"
     id: speaker_volume
     entity_category: config
@@ -291,18 +350,40 @@ switch:
     pin: GPIO53  # PA_Ctrl
     restore_mode: RESTORE_DEFAULT_ON
     entity_category: config
-  - platform: template
-    name: "Talk"
-    icon: "mdi:account-voice"
-    optimistic: true
-    restore_mode: ALWAYS_OFF
-    on_turn_on:
-      - lanicom.start_talking:
-          target: ${ptt_target}
-    on_turn_off:
-      - lanicom.stop_talking:
 
 button:
   - platform: restart
     name: "Restart"
     entity_category: diagnostic
+  - platform: factory_reset
+    name: "Factory reset"
+    entity_category: config
+  - platform: template
+    name: "Identify"
+    icon: "mdi:lightbulb-on"
+    on_press:
+      - lambda: 'id(intercom).identify();'
+  - platform: template
+    name: "Unpair button 1"
+    icon: "mdi:link-variant-off"
+    entity_category: config
+    on_press:
+      - lambda: 'id(intercom).unpair(0);'
+  - platform: template
+    name: "Unpair button 2"
+    icon: "mdi:link-variant-off"
+    entity_category: config
+    on_press:
+      - lambda: 'id(intercom).unpair(1);'
+  - platform: template
+    name: "Unpair button 3"
+    icon: "mdi:link-variant-off"
+    entity_category: config
+    on_press:
+      - lambda: 'id(intercom).unpair(2);'
+  - platform: template
+    name: "Unpair button 4"
+    icon: "mdi:link-variant-off"
+    entity_category: config
+    on_press:
+      - lambda: 'id(intercom).unpair(3);'

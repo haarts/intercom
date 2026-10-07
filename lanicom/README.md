@@ -7,7 +7,7 @@ peer). Every packet is encrypted and authenticated with a shared network key.
 - Why it's built this way, the status and the latency budget: [PLAN.md](PLAN.md)
 - The wire protocol: [spec/PROTOCOL.md](spec/PROTOCOL.md)
 - Setting up devices (for friends): [docs/friends.md](docs/friends.md)
-- Buttons, pairing and LED patterns (design, not built yet): [docs/buttons.md](docs/buttons.md)
+- Buttons, pairing and LED patterns: [docs/buttons.md](docs/buttons.md)
 
 | Path | What |
 |---|---|

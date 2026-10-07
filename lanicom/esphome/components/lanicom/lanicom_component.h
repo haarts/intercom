@@ -17,7 +17,9 @@
 #include <freertos/semphr.h>
 #include <freertos/task.h>
 
+#include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/microphone/microphone.h"
+#include "esphome/components/output/float_output.h"
 #include "esphome/components/speaker/speaker.h"
 #include "esphome/core/automation.h"
 #include "esphome/core/component.h"
@@ -66,10 +68,23 @@ class LanicomComponent : public Component {
   void set_mic_warmup_ms(uint32_t ms) { this->mic_warmup_ms_ = ms; }
   void set_speaker_hold_ms(uint32_t ms) { this->speaker_hold_ms_ = ms; }
   void set_task_core(int core) { this->task_core_ = core; }
+  // Buttons (1-4): the button's binary sensor and its ring (optional).
+  void add_button(binary_sensor::BinarySensor *sensor, output::FloatOutput *ring) {
+    this->button_sensors_.push_back(sensor);
+    this->button_rings_.push_back(ring);
+  }
+  void set_ring_brightness(float level) { this->ring_idle_ = level; }
 
   // Runtime API (main loop).
   void start_talking(const std::string &target);
   void stop_talking();
+  // Buttons, for the web page / Home Assistant (button 0-based).
+  size_t button_count() const { return this->button_sensors_.size(); }
+  std::string partner_summary(size_t button);
+  void unpair(size_t button);
+  // Flash every ring (identify: 10 s; also the reset counter, briefly).
+  void identify(uint32_t ms = 10000) { this->identify_until_ = millis() + ms; }
+  float get_ring_brightness() const { return this->ring_idle_; }
   bool is_talking() const { return this->talk_requested_; }
   bool is_transmitting() const { return this->transmitting_.load(); }
   bool is_receiving() const { return this->receiving_.load(); }
@@ -101,6 +116,8 @@ class LanicomComponent : public Component {
   void manage_bus_();
   void apply_identity_();
   void post_event_(EventType type, const char *name);
+  void buttons_loop_();
+  void update_rings_();
 
   // lc_engine callbacks (run in the net or audio task, engine_mutex_ held).
   static void cb_send(void *ctx, lc_addr_t to, const uint8_t *data, size_t len);
@@ -111,6 +128,8 @@ class LanicomComponent : public Component {
                        size_t len);
   static void cb_talk_stop(void *ctx, const lc_peer_t *peer, uint32_t stream_id);
   static void cb_sender_id_changed(void *ctx, uint32_t sender_id);
+  static void cb_hello(void *ctx, const lc_peer_t *peer, const lc_hello_t *hello);
+  static void cb_control(void *ctx, const lc_peer_t *peer, const lc_control_t *msg);
   // lc_rx callbacks (rx_mutex_ held).
   static int cb_decode(void *ctx, int slot, lc_jb_kind_t kind, const uint8_t *data, size_t len, uint32_t samples,
                        int16_t *pcm);
@@ -163,7 +182,20 @@ class LanicomComponent : public Component {
   // Talk state (main loop decides, audio task executes).
   bool talk_requested_{false};
   std::string talk_target_{"all"};
-  std::atomic<bool> talk_begin_{false}, talk_end_{false};
+  std::vector<uint32_t> talk_devices_;  // set by the buttons (guarded by engine_mutex_); empty: talk_target_
+  std::atomic<bool> talk_begin_{false}, talk_end_{false}, talk_update_{false};
+
+  // Buttons and rings. buttons_ is guarded by engine_mutex_ (the net task feeds it peers' messages).
+  std::vector<binary_sensor::BinarySensor *> button_sensors_;
+  std::vector<output::FloatOutput *> button_rings_;
+  lc_buttons_t buttons_{};
+  struct PersistedLinks {
+    lc_button_link_t links[LC_MAX_BUTTONS];
+  } links_{};
+  ESPPreferenceObject links_pref_;
+  float ring_idle_{0.1f};
+  uint32_t identify_until_{0};
+  std::atomic<uint32_t> rx_senders_[LC_RX_STREAMS]{};  // sender of each playing stream, 0: none
 
   // I2S bus (main loop only).
   Bus bus_{Bus::NONE};

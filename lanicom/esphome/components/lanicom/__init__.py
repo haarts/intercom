@@ -8,7 +8,7 @@ from pathlib import Path
 
 from esphome import automation
 import esphome.codegen as cg
-from esphome.components import microphone, socket, speaker, text
+from esphome.components import binary_sensor, microphone, output, socket, speaker, text
 from esphome.components.esp32 import add_idf_component, add_idf_sdkconfig_option
 import esphome.config_validation as cv
 from esphome.const import CONF_ID, CONF_MICROPHONE, CONF_PORT, CONF_SPEAKER
@@ -35,6 +35,10 @@ CONF_SPEAKER_HOLD = "speaker_hold"
 CONF_TASK_CORE = "task_core"
 CONF_OPUS_PATH = "opus_path"
 CONF_TARGET = "target"
+CONF_BUTTONS = "buttons"
+CONF_BUTTON = "button"
+CONF_RING = "ring"
+CONF_RING_BRIGHTNESS = "ring_brightness"
 CONF_ON_RECEIVE_START = "on_receive_start"
 CONF_ON_RECEIVE_END = "on_receive_end"
 CONF_ON_PEER_ADDED = "on_peer_added"
@@ -88,6 +92,21 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_TASK_CORE, default=1): cv.int_range(min=0, max=1),
             # Use a local micro-opus copy (e.g. esp32-mumble/lib/micro-opus) instead of the registry's.
             cv.Optional(CONF_OPUS_PATH): cv.directory,
+            # Wall-box buttons, in order (1-4). Each one is paired with one button on another box
+            # and talks to it; see docs/buttons.md. With buttons, only partners and announcers
+            # (Home Assistant) are played.
+            cv.Optional(CONF_BUTTONS): cv.All(
+                cv.ensure_list(
+                    cv.Schema(
+                        {
+                            cv.Required(CONF_BUTTON): cv.use_id(binary_sensor.BinarySensor),
+                            cv.Optional(CONF_RING): cv.use_id(output.FloatOutput),
+                        }
+                    )
+                ),
+                cv.Length(min=1, max=4),
+            ),
+            cv.Optional(CONF_RING_BRIGHTNESS, default="10%"): cv.percentage,
             cv.Optional(CONF_ON_RECEIVE_START): automation.validate_automation(single=True),
             cv.Optional(CONF_ON_RECEIVE_END): automation.validate_automation(single=True),
             cv.Optional(CONF_ON_PEER_ADDED): automation.validate_automation(single=True),
@@ -149,6 +168,11 @@ async def to_code(config):
     cg.add(var.set_mic_warmup_ms(config[CONF_MIC_WARMUP].total_milliseconds))
     cg.add(var.set_speaker_hold_ms(config[CONF_SPEAKER_HOLD].total_milliseconds))
     cg.add(var.set_task_core(config[CONF_TASK_CORE]))
+    for button in config.get(CONF_BUTTONS, []):
+        sensor = await cg.get_variable(button[CONF_BUTTON])
+        ring = await cg.get_variable(button[CONF_RING]) if CONF_RING in button else cg.nullptr
+        cg.add(var.add_button(sensor, ring))
+    cg.add(var.set_ring_brightness(config[CONF_RING_BRIGHTNESS]))
 
     for conf_key, getter, args in (
         (CONF_ON_RECEIVE_START, "get_receive_start_trigger", [(cg.std_string, "name")]),

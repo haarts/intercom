@@ -1,8 +1,15 @@
-# Buttons, pairing and LED patterns (design, not built yet)
+# Buttons, pairing and LED patterns
 
 How the illuminated buttons on a wall box get linked to other wall boxes, and what their
-LED rings show. Captured 2026-10-07. Nothing here is implemented; the firmware still has
-one PTT button with a fixed target.
+LED rings show. Designed 2026-10-07, built the same day:
+
+- protocol: [PROTOCOL.md](../spec/PROTOCOL.md) section 7 (v1.1);
+- logic: `lanicom-core` `lc_buttons` (host-tested in `test/test_engine.c`);
+- device: the `buttons:` option of the ESPHome component, set up in
+  [`lanicom-p4.yaml`](../esphome/lanicom-p4.yaml).
+
+Not built yet: night brightness, the boot sweep, and a brightness per button (there is one
+"Ring brightness" for all of them).
 
 ## Decided
 
@@ -30,9 +37,10 @@ one PTT button with a fixed target.
 
 ## Pieces it builds on
 
-- **Device identity:** every device has a `sender_id`, random at first boot and then saved
-  ([PROTOCOL.md](../spec/PROTOCOL.md) §3). A link stores the partner's `sender_id` and
-  button number, so it survives reboots and IP changes.
+- **Device identity:** every device has a `sender_id`, saved at first boot
+  ([PROTOCOL.md](../spec/PROTOCOL.md) §3). The ESPHome firmware derives it from the MAC
+  address, so it survives a factory reset too. A link stores the partner's `sender_id`
+  and button number, so it survives reboots and IP changes.
 - **Talking:** a button talks with target `device:<partner sender_id>`, which the protocol
   already supports (§6, Addressing).
 - **Presence:** every device sends a `Hello` every 5 s, and peers are forgotten after 30 s
@@ -71,10 +79,10 @@ offline at the time catches up as soon as both are online again. Nothing needs a
 If a partner never comes back (a broken device), its buttons keep pointing at it and show
 "partner offline". Resetting the links on that device frees them.
 
-### Protocol additions (draft)
+### Protocol additions
 
-To be added to `lanicom.proto` and PROTOCOL.md as v1.1. Old devices skip unknown fields and
-messages, so this is backwards compatible.
+In `lanicom.proto` and PROTOCOL.md (v1.1). Old devices skip unknown fields and messages,
+so this is backwards compatible.
 
 ```proto
 message PairOffer   { fixed64 nonce = 1; uint32 button = 2; }  // broadcast 1/s while a button is in pairing mode
@@ -82,9 +90,12 @@ message PairAccept  { fixed64 nonce = 1; uint32 button = 2; }  // unicast to the
 message PairConfirm { fixed64 nonce = 1; }                     // unicast back; both save the link
 
 message Link { uint32 button = 1; fixed32 partner = 2; uint32 partner_button = 3; }
-// Hello gets: repeated Link links = 7;
-// caps gets: bit 3 ANNOUNCER (Home Assistant)
+// Hello: repeated Link links = 11;  Control: pair_offer = 11, pair_accept = 12, pair_confirm = 13
+// caps: bit 3 ANNOUNCER (Home Assistant)
 ```
+
+If two buttons enter pairing mode within the same second, both offer; the one with the
+larger nonce accepts the other's offer, so exactly one link is made.
 
 ## Reset and unpair
 
@@ -135,7 +146,7 @@ These override the per-button states.
 
 | State | Pattern | Meaning |
 |---|---|---|
-| Booting | One fade up and down (on 4 buttons: a sweep 1 → 4) | Starting up |
+| Booting | One fade up and down (on 4 buttons: a sweep 1 → 4). Not built yet | Starting up |
 | Announcement | All rings breathe together | Home Assistant is talking to this device |
 | Reset count | One flash per power cycle | Counting towards a factory reset |
 | Identify | All rings flash for 10 s | "Identify" pressed on the web page |
@@ -155,13 +166,13 @@ custom web code.
 - **Per button:**
   - its partner (device name and button) and whether it is online;
   - "Unpair";
-  - the ring's idle brightness.
+  - the ring's idle brightness (built as one "Ring brightness" for all rings).
 - **Device:**
   - name;
   - network key (defaults to the baked-in one);
   - speaker volume and mic gain (already there);
   - night brightness for the rings, and the hours it applies (needs the time from Home
-    Assistant or SNTP);
+    Assistant or SNTP). Not built yet;
   - "Identify": all rings flash for 10 s, to find which box this is;
   - "Restart" (already there) and "Factory reset".
 - **Status (read-only):** IP address, peers, dropped packets (already there), firmware
