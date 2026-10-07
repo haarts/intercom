@@ -125,7 +125,9 @@ module y_hole(x, y0, y1, z, d) {
 
 module shell_body() {
   difference() {
-    box(-O, -O, 0, OUTER_W, OUTER_H, DEPTH);
+    // Outside: the plate's outline grown by the gap and the wall, so the corners are rounded
+    // too (radius PLATE_R + O) and the wall is equally thick all round.
+    linear_extrude(DEPTH) plate_outline(O);
     // Hollow from the front, leaving the back wall; the plate sits in the opening, whose
     // corners follow the plate's rounded ones with the same gap.
     translate([0, 0, -E]) linear_extrude(Z_BACK + E) plate_outline(REBATE_GAP);
