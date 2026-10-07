@@ -44,6 +44,13 @@ esp32:
     type: esp-idf
     advanced:
       compiler_optimization: SIZE
+    sdkconfig_options:
+      # No PSRAM here: Opus's default 120 KB scratch per thread can't be allocated, and the
+      # first encode/decode then crashes. Only lanicom's audio task uses Opus, so one shared
+      # scratch area of the minimum size, in internal RAM, is enough.
+      CONFIG_OPUS_NONTHREADSAFE_PSEUDOSTACK: y
+      CONFIG_OPUS_PSEUDOSTACK_SIZE: "60000"
+      CONFIG_OPUS_PSEUDOSTACK_INTERNAL_ONLY: y
 
 wifi:
   ssid: !secret wifi_ssid

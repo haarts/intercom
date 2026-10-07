@@ -3,6 +3,7 @@
 #include <cinttypes>
 #include <cstring>
 
+#include <esp_heap_caps.h>
 #include <esp_random.h>
 #include <lwip/inet.h>
 #include <lwip/sockets.h>
@@ -763,6 +764,9 @@ void LanicomComponent::audio_run_() {
       ESP_LOGE(TAG, "Opus decoder: %d", err);
   }
 
+  ESP_LOGI(TAG, "Opus ready; free internal RAM %u bytes (largest block %u)",
+           (unsigned) heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+           (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
   const uint32_t frame_samples = SAMPLE_RATE * this->frame_ms_ / 1000;
   std::vector<int16_t> frame(frame_samples);
   uint8_t packet[400];
