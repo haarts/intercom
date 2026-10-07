@@ -102,15 +102,25 @@ void LanicomComponent::setup() {
     this->mic_->add_data_callback([this](const std::vector<uint8_t> &data) {
       if (!this->mic_ready_ || millis() < this->mic_discard_until_)
         return;
-      const int16_t *samples = reinterpret_cast<const int16_t *>(data.data());
-      size_t n = data.size() / sizeof(int16_t);
+      // 16-bit samples, or 32-bit ones (codecs clocked from 32-bit slots): keep the top 16 bits.
+      bool wide = this->mic_->get_audio_stream_info().get_bits_per_sample() > 16;
+      size_t n = data.size() / (wide ? sizeof(int32_t) : sizeof(int16_t));
       uint32_t w = this->capture_write_.load(std::memory_order_relaxed);
       uint32_t r = this->capture_read_.load(std::memory_order_acquire);
       size_t space = CAPTURE_SAMPLES - (w - r);
       if (n > space)
         n = space;  // overrun: the encoder fell behind; drop the newest samples
-      for (size_t i = 0; i < n; i++)
-        this->capture_[(w + i) % CAPTURE_SAMPLES] = samples[i];
+      for (size_t i = 0; i < n; i++) {
+        int16_t v;
+        if (wide) {
+          int32_t s;
+          memcpy(&s, data.data() + i * sizeof(s), sizeof(s));
+          v = (int16_t) (s >> 16);
+        } else {
+          memcpy(&v, data.data() + i * sizeof(v), sizeof(v));
+        }
+        this->capture_[(w + i) % CAPTURE_SAMPLES] = v;
+      }
       this->capture_write_.store(w + n, std::memory_order_release);
       if (this->audio_task_handle_ != nullptr)
         xTaskNotifyGive(this->audio_task_handle_);
