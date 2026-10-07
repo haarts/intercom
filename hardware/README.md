@@ -136,6 +136,7 @@ Print the shell with its back on the bed; the rebate and bosses need no supports
     USB-C end). Check it against the board before gluing; `MIC_XY` moves it.
 - **PoE module:** modelled as a 32 × 26 × 13 mm block. Check the real height and overhang.
 - **Cable:** the RJ45 plug and the cable's bend between the jack and the cable opening. A slim patch cable helps.
-- **Speaker chamber:** check it is sealed, and add foam between the speaker and the plate.
+- **Speaker chamber:** the wires leave through a 4 × 3 mm notch where the chamber's right wall meets the back wall.
+  Seal it with hot glue after fitting, check the chamber is airtight, and add foam between the speaker and the plate.
 - **Button depth:** 46 mm inside depth assumes a 33 mm body plus its plug. Measure the real buttons.
 - **Button cables:** the JSTs are labelled BTN1–BTN4 from left to right; cut each cable to its button.

@@ -90,6 +90,7 @@ RJ45_PLUG_L = 22;    // plug plus the cable's bend, in front of the jack
 SPK = 40; SPK_H = 18;
 SPK_CENTER = [40, 54];
 CHAMBER_WALL = 2;
+SPK_WIRE_SLOT = [4, 3];  // notch for the speaker wires: width, height (seal it after fitting)
 
 // --- cable and wall plate ---
 CABLE_HOLE = [65, 35, 84, 72];  // x0, y0, x1, y1 in the back wall, beside the RJ45 jack
@@ -161,6 +162,10 @@ module shell() {
     // Insert holes: plate bosses and carrier standoffs.
     for (p = PLATE_HOLES) translate([p[0], p[1], PLATE_T - E]) cylinder(d = M3_INSERT_D, h = M3_INSERT_L + E);
     for (p = CARRIER_HOLES) translate([p[0], p[1], Z_BACK - STANDOFF_H - E]) cylinder(d = M3_INSERT_D, h = M3_INSERT_L + E);
+    // Speaker wires: a notch in the chamber's wall towards the electronics, where it meets the
+    // back wall, so the wires run along the back to the P4. Seal it (hot glue) after fitting.
+    translate([SPK_CENTER[0] + (SPK + 1) / 2 - 1, SPK_CENTER[1] - SPK_WIRE_SLOT[0] / 2, Z_BACK - SPK_WIRE_SLOT[1]])
+      cube([CHAMBER_WALL + 2, SPK_WIRE_SLOT[0], SPK_WIRE_SLOT[1] + E]);
     // Cable opening in the back wall.
     box(CABLE_HOLE[0], CABLE_HOLE[1], Z_BACK - 1, CABLE_HOLE[2] - CABLE_HOLE[0], CABLE_HOLE[3] - CABLE_HOLE[1], BACK + 2);
     // Recesses in the back for the wall box screw heads. The shell is hung SLIDE mm higher
