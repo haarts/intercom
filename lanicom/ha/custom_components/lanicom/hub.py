@@ -14,7 +14,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from .const import EVENT_TALK_START, EVENT_TALK_STOP, SIGNAL_PEER_ADDED, SIGNAL_UPDATE, TALK_TIMEOUT_S
-from .lanicom_lib import CAP_CAPTURE, CAP_MONITOR, NetworkKey, Node, NodeConfig, Target
+from .lanicom_lib import CAP_ANNOUNCER, CAP_CAPTURE, CAP_MONITOR, NetworkKey, Node, NodeConfig, Target
 from .lanicom_lib.control import TalkStart
 from .lanicom_lib.peers import Peer
 
@@ -46,7 +46,7 @@ class LanicomHub:
         self.hass = hass
         self.entry_id = entry_id
         # HA talks (announcements) and wants talk events, but plays no audio: devices don't stream to it.
-        self.node = Node(key, NodeConfig(name=name, caps=CAP_CAPTURE | CAP_MONITOR, sender_id=sender_id, rtt_probe=True))
+        self.node = Node(key, NodeConfig(name=name, caps=CAP_CAPTURE | CAP_MONITOR | CAP_ANNOUNCER, sender_id=sender_id, rtt_probe=True))
         self.peers: dict[int, PeerState] = {}
         self._unsub_interval = None
         self.node.on_peer_added = self._peer_added

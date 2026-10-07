@@ -108,6 +108,19 @@ static bool recipient(const lc_peer_t *p, const lc_target_t *t) {
   return p->in_use && p->verified && (p->info.caps & LC_CAP_PLAYBACK) && lc_target_matches(t, p->sender_id);
 }
 
+static bool talk_has(const lc_talk_t *talk, uint32_t device) {
+  for (uint8_t i = 0; i < talk->n_devices; i++)
+    if (talk->devices[i] == device)
+      return true;
+  return false;
+}
+
+static bool talk_recipient(const lc_peer_t *p, const lc_talk_t *talk) {
+  if (talk->target.kind == LC_TARGET_ALL)
+    return recipient(p, &talk->target);
+  return p->in_use && p->verified && (p->info.caps & LC_CAP_PLAYBACK) && talk_has(talk, p->sender_id);
+}
+
 size_t lc_engine_recipient_count(const lc_engine_t *e, const lc_target_t *target) {
   size_t n = 0;
   for (int i = 0; i < LC_MAX_PEERS; i++)
@@ -116,18 +129,20 @@ size_t lc_engine_recipient_count(const lc_engine_t *e, const lc_target_t *target
 }
 
 /* Seal once, then multicast or fan out. Returns the number of recipients. */
-static int send_to_target(lc_engine_t *e, uint8_t type, const uint8_t *plain, size_t len, const lc_target_t *t) {
-  size_t n = lc_engine_recipient_count(e, t);
+static int send_to_talk(lc_engine_t *e, uint8_t type, const uint8_t *plain, size_t len, const lc_talk_t *talk) {
+  size_t n = 0;
+  for (int i = 0; i < LC_MAX_PEERS; i++)
+    n += talk_recipient(&e->peers[i], talk);
   if (n == 0)
     return 0;
   int plen = seal(e, type, plain, len);
   if (plen <= 0)
     return 0;
-  if (e->multicast && t->kind == LC_TARGET_ALL) {
+  if (e->multicast && talk->target.kind == LC_TARGET_ALL) {
     send_raw(e, (lc_addr_t){LC_MULTICAST_IP, e->port}, e->tx, (size_t)plen);
   } else {
     for (int i = 0; i < LC_MAX_PEERS; i++)
-      if (recipient(&e->peers[i], t))
+      if (talk_recipient(&e->peers[i], talk))
         send_raw(e, e->peers[i].addr, e->tx, (size_t)plen);
   }
   return (int)n;
@@ -152,9 +167,7 @@ static void send_talk_metadata(lc_engine_t *e, const lc_control_t *msg, const lc
 
 /* --- identity ------------------------------------------------------------ */
 
-void lc_engine_set_identity(lc_engine_t *e, const char *name, uint32_t caps) {
-  snprintf(e->self.name, sizeof(e->self.name), "%s", name ? name : "");
-  e->self.caps = caps;
+static void announce(lc_engine_t *e) {
   if (e->startup_hellos >= 3) { /* already running: tell everyone now */
     broadcast_hello(e, false);
     for (int i = 0; i < LC_MAX_PEERS; i++)
@@ -162,6 +175,43 @@ void lc_engine_set_identity(lc_engine_t *e, const char *name, uint32_t caps) {
         send_hello_to(e, e->peers[i].addr, 0, 0, false);
   }
 }
+
+void lc_engine_set_identity(lc_engine_t *e, const char *name, uint32_t caps) {
+  snprintf(e->self.name, sizeof(e->self.name), "%s", name ? name : "");
+  e->self.caps = caps;
+  announce(e);
+}
+
+void lc_engine_set_links(lc_engine_t *e, const lc_link_t *links, size_t n) {
+  if (n > LC_MAX_LINKS)
+    n = LC_MAX_LINKS;
+  memcpy(e->self.links, links, n * sizeof(*links));
+  e->self.n_links = (uint8_t)n;
+  announce(e);
+}
+
+int lc_engine_send_control(lc_engine_t *e, uint32_t sender_id, const lc_control_t *msg) {
+  const lc_peer_t *p = lc_engine_find_peer(e, sender_id);
+  if (!p || !p->verified)
+    return -1;
+  int n = seal_control(e, msg);
+  if (n <= 0)
+    return -1;
+  send_raw(e, p->addr, e->tx, (size_t)n);
+  return 0;
+}
+
+void lc_engine_broadcast_control(lc_engine_t *e, const lc_control_t *msg) {
+  int n = seal_control(e, msg);
+  if (n <= 0)
+    return;
+  if (e->broadcast)
+    send_raw(e, (lc_addr_t){LC_BROADCAST_IP, e->port}, e->tx, (size_t)n);
+  for (uint8_t i = 0; i < e->n_static; i++)
+    send_raw(e, e->statics[i], e->tx, (size_t)n);
+}
+
+uint64_t lc_engine_random64(lc_engine_t *e) { return rnd64_nonzero(e); }
 
 int lc_engine_add_static_peer(lc_engine_t *e, lc_addr_t addr) {
   if (e->n_static >= LC_MAX_STATIC)
@@ -272,6 +322,11 @@ static void handle_control(lc_engine_t *e, lc_peer_t *p, const lc_control_t *msg
     } else if (changed && e->cb.peer_updated) {
       e->cb.peer_updated(e->cb.ctx, p);
     }
+    if (e->cb.hello)
+      e->cb.hello(e->cb.ctx, p, h);
+  } else if (msg->type >= LC_MSG_PAIR_OFFER && msg->type <= LC_MSG_PAIR_CONFIRM) {
+    if (e->cb.control)
+      e->cb.control(e->cb.ctx, p, msg);
   } else if (msg->type == LC_MSG_TALK_START) {
     if (!talk_seen(e, p->sender_id, msg->u.talk_start.stream_id)) {
       talk_remember(e, p->sender_id, msg->u.talk_start.stream_id, now_ms);
@@ -420,22 +475,76 @@ void lc_engine_bye(lc_engine_t *e) {
 
 /* --- talking ------------------------------------------------------------- */
 
+static void talk_add(lc_talk_t *talk, uint32_t device) {
+  if (device && !talk_has(talk, device) && talk->n_devices < LC_TALK_MAX_DEVICES) {
+    talk->starts[talk->n_devices] = 0;
+    talk->devices[talk->n_devices++] = device;
+  }
+}
+
 void lc_talk_begin(lc_engine_t *e, lc_talk_t *talk, const lc_target_t *target) {
   memset(talk, 0, sizeof(*talk));
   talk->target = *target;
+  if (target->kind == LC_TARGET_DEVICE)
+    talk_add(talk, target->device);
   talk->stream_id = rnd32_nonzero(e);
   talk->ts = rnd32(e);
   talk->active = true;
 }
 
+void lc_talk_begin_devices(lc_engine_t *e, lc_talk_t *talk, const uint32_t *devices, size_t n) {
+  lc_target_t t = {LC_TARGET_DEVICE, 0};
+  lc_talk_begin(e, talk, &t);
+  for (size_t i = 0; i < n; i++)
+    talk_add(talk, devices[i]);
+}
+
+static void send_stop_to(lc_engine_t *e, const lc_talk_t *talk, const lc_target_t *t) {
+  lc_control_t msg = {.type = LC_MSG_TALK_STOP};
+  msg.u.talk_stop.stream_id = talk->stream_id;
+  for (int i = 0; i < 3; i++)
+    send_talk_metadata(e, &msg, t);
+}
+
+void lc_talk_set_devices(lc_engine_t *e, lc_talk_t *talk, const uint32_t *devices, size_t n) {
+  if (!talk->active || talk->target.kind != LC_TARGET_DEVICE)
+    return;
+  uint8_t keep = 0;
+  for (uint8_t i = 0; i < talk->n_devices; i++) {
+    bool wanted = false;
+    for (size_t j = 0; j < n && !wanted; j++)
+      wanted = devices[j] == talk->devices[i];
+    if (wanted) {
+      talk->devices[keep] = talk->devices[i];
+      talk->starts[keep++] = talk->starts[i];
+    } else if (talk->starts[i]) {
+      lc_target_t t = {LC_TARGET_DEVICE, talk->devices[i]};
+      send_stop_to(e, talk, &t);
+    }
+  }
+  talk->n_devices = keep;
+  for (size_t j = 0; j < n; j++)
+    talk_add(talk, devices[j]);
+}
+
 int lc_talk_frame(lc_engine_t *e, lc_talk_t *talk, const uint8_t *opus, size_t len, uint32_t samples) {
   if (!talk->active || len == 0 || len + AUDIO_HDR > LC_MAX_PLAINTEXT)
     return 0;
-  if (talk->frames < 3) {
-    lc_control_t msg = {.type = LC_MSG_TALK_START};
-    msg.u.talk_start.target = talk->target;
-    msg.u.talk_start.stream_id = talk->stream_id;
-    send_talk_metadata(e, &msg, &talk->target);
+  lc_control_t msg = {.type = LC_MSG_TALK_START};
+  msg.u.talk_start.stream_id = talk->stream_id;
+  if (talk->target.kind == LC_TARGET_ALL) {
+    if (talk->frames < 3) {
+      msg.u.talk_start.target = talk->target;
+      send_talk_metadata(e, &msg, &talk->target);
+    }
+  } else {
+    for (uint8_t i = 0; i < talk->n_devices; i++) {
+      if (talk->starts[i] >= 3)
+        continue;
+      msg.u.talk_start.target = (lc_target_t){LC_TARGET_DEVICE, talk->devices[i]};
+      send_talk_metadata(e, &msg, &msg.u.talk_start.target);
+      talk->starts[i]++;
+    }
   }
   uint8_t plain[LC_MAX_PLAINTEXT];
   uint32_t sid = talk->stream_id, ts = talk->ts;
@@ -443,7 +552,7 @@ int lc_talk_frame(lc_engine_t *e, lc_talk_t *talk, const uint8_t *opus, size_t l
                             (uint8_t)(ts >> 24),  (uint8_t)(ts >> 16),  (uint8_t)(ts >> 8),  (uint8_t)ts};
   memcpy(plain, hdr, AUDIO_HDR);
   memcpy(plain + AUDIO_HDR, opus, len);
-  int n = send_to_target(e, LC_TYPE_AUDIO, plain, AUDIO_HDR + len, &talk->target);
+  int n = send_to_talk(e, LC_TYPE_AUDIO, plain, AUDIO_HDR + len, talk);
   talk->ts += samples * LC_TICKS_PER_SAMPLE_ENGINE;
   talk->frames++;
   return n;
@@ -455,8 +564,13 @@ void lc_talk_end(lc_engine_t *e, lc_talk_t *talk) {
   talk->active = false;
   if (!talk->frames)
     return;
-  lc_control_t msg = {.type = LC_MSG_TALK_STOP};
-  msg.u.talk_stop.stream_id = talk->stream_id;
-  for (int i = 0; i < 3; i++)
-    send_talk_metadata(e, &msg, &talk->target);
+  if (talk->target.kind == LC_TARGET_ALL) {
+    send_stop_to(e, talk, &talk->target);
+    return;
+  }
+  for (uint8_t i = 0; i < talk->n_devices; i++) {
+    lc_target_t t = {LC_TARGET_DEVICE, talk->devices[i]};
+    if (talk->starts[i])
+      send_stop_to(e, talk, &t);
+  }
 }

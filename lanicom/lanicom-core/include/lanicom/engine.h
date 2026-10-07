@@ -69,6 +69,10 @@ typedef struct {
   void (*audio)(void *ctx, const lc_peer_t *peer, uint32_t stream_id, uint32_t ts, const uint8_t *opus,
                 size_t len);
   void (*sender_id_changed)(void *ctx, uint32_t sender_id); /* persist it */
+  /* Every verified Hello (after peer_added/peer_updated), e.g. to check the peer's links. */
+  void (*hello)(void *ctx, const lc_peer_t *peer, const lc_hello_t *hello);
+  /* Verified pairing messages (LC_MSG_PAIR_*). */
+  void (*control)(void *ctx, const lc_peer_t *peer, const lc_control_t *msg);
   void *ctx;
 } lc_callbacks_t;
 
@@ -106,8 +110,15 @@ typedef struct {
   uint8_t rx_plain[LC_MAX_PACKET];
 } lc_engine_t;
 
+#define LC_TALK_MAX_DEVICES 8
+
+/* One outgoing stream: to every peer (target all), or to a set of devices. A device set gets
+ * one stream, sealed once per frame; each device gets its own TalkStart naming it. */
 typedef struct {
-  lc_target_t target;
+  lc_target_t target; /* LC_TARGET_DEVICE: the set is devices[] */
+  uint32_t devices[LC_TALK_MAX_DEVICES];
+  uint8_t starts[LC_TALK_MAX_DEVICES]; /* TalkStarts sent to each device so far */
+  uint8_t n_devices;
   uint32_t stream_id;
   uint32_t ts;
   uint32_t frames;
@@ -119,6 +130,13 @@ void lc_engine_init(lc_engine_t *e, const lc_key_t *key, uint32_t sender_id, uin
                     const lc_callbacks_t *cb, uint32_t now_ms);
 /* Announces the change to peers. */
 void lc_engine_set_identity(lc_engine_t *e, const char *name, uint32_t caps);
+/* Our button links, listed in every Hello. Announces the change to peers. */
+void lc_engine_set_links(lc_engine_t *e, const lc_link_t *links, size_t n);
+/* Unicast a control message to a verified peer; -1 if there is no such peer. */
+int lc_engine_send_control(lc_engine_t *e, uint32_t sender_id, const lc_control_t *msg);
+/* Broadcast a control message (and send it to the static peers). */
+void lc_engine_broadcast_control(lc_engine_t *e, const lc_control_t *msg);
+uint64_t lc_engine_random64(lc_engine_t *e); /* non-zero */
 int lc_engine_add_static_peer(lc_engine_t *e, lc_addr_t addr);
 void lc_engine_receive(lc_engine_t *e, const uint8_t *data, size_t len, lc_addr_t from, uint32_t now_ms);
 /* Call every 100 ms or so: Hellos, expiry. */
@@ -131,6 +149,10 @@ size_t lc_engine_peer_count(const lc_engine_t *e); /* verified peers */
 size_t lc_engine_recipient_count(const lc_engine_t *e, const lc_target_t *target);
 
 void lc_talk_begin(lc_engine_t *e, lc_talk_t *talk, const lc_target_t *target);
+/* A stream to a set of devices (at most LC_TALK_MAX_DEVICES; duplicates are ignored). */
+void lc_talk_begin_devices(lc_engine_t *e, lc_talk_t *talk, const uint32_t *devices, size_t n);
+/* Change the set mid-stream: new devices get TalkStarts, dropped ones a TalkStop. */
+void lc_talk_set_devices(lc_engine_t *e, lc_talk_t *talk, const uint32_t *devices, size_t n);
 /* One Opus frame of `samples` (16 kHz). Returns the number of recipients. */
 int lc_talk_frame(lc_engine_t *e, lc_talk_t *talk, const uint8_t *opus, size_t len, uint32_t samples);
 void lc_talk_end(lc_engine_t *e, lc_talk_t *talk);

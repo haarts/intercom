@@ -2,7 +2,7 @@
 # - As an ESP-IDF component (ESPHome adds it with add_idf_component): only the library.
 # - Standalone (host): the library, unit tests (ctest) and lanicom_tool for interop tests.
 
-set(LANICOM_SRCS src/crypto.c src/packet.c src/replay.c src/control.c src/jitter.c src/engine.c)
+set(LANICOM_SRCS src/crypto.c src/packet.c src/replay.c src/control.c src/jitter.c src/engine.c src/buttons.c)
 
 if(ESP_PLATFORM)
   idf_component_register(SRCS ${LANICOM_SRCS} INCLUDE_DIRS include REQUIRES mbedtls)

@@ -14,6 +14,7 @@ from typing import Union
 CAP_PLAYBACK = 1
 CAP_CAPTURE = 2
 CAP_MONITOR = 4
+CAP_ANNOUNCER = 8  # may talk to any device, button partner or not (Home Assistant)
 
 _VARINT, _I64, _LEN, _I32 = 0, 1, 2, 5
 
@@ -37,6 +38,15 @@ class Target:
         return "all"
 
 
+@dataclass(frozen=True)
+class Link:
+    """One of the sender's buttons linked to a button on another device (1-based)."""
+
+    button: int = 0
+    partner: int = 0
+    partner_button: int = 0
+
+
 @dataclass
 class Hello:
     name: str = ""
@@ -44,6 +54,7 @@ class Hello:
     challenge: int = 0
     echo: int = 0
     bye: bool = False
+    links: list[Link] = field(default_factory=list)
 
 
 @dataclass
@@ -57,7 +68,24 @@ class TalkStop:
     stream_id: int = 0
 
 
-Control = Union[Hello, TalkStart, TalkStop]
+@dataclass
+class PairOffer:
+    nonce: int = 0
+    button: int = 0
+
+
+@dataclass
+class PairAccept:
+    nonce: int = 0
+    button: int = 0
+
+
+@dataclass
+class PairConfirm:
+    nonce: int = 0
+
+
+Control = Union[Hello, TalkStart, TalkStop, PairOffer, PairAccept, PairConfirm]
 
 
 # --- writer ---------------------------------------------------------------
@@ -101,6 +129,22 @@ def _encode_hello(h: Hello) -> bytes:
         out += _key(5, _I64) + struct.pack("<Q", h.echo)
     if h.bye:
         out += _key(6, _VARINT) + b"\x01"
+    for link in h.links:
+        body = b""
+        if link.button:
+            body += _key(1, _VARINT) + _varint(link.button)
+        if link.partner:
+            body += _key(2, _I32) + struct.pack("<I", link.partner)
+        if link.partner_button:
+            body += _key(3, _VARINT) + _varint(link.partner_button)
+        out += _len_field(11, body)
+    return out
+
+
+def _encode_pair(nonce: int, button: int) -> bytes:
+    out = _key(1, _I64) + struct.pack("<Q", nonce) if nonce else b""
+    if button:
+        out += _key(2, _VARINT) + _varint(button)
     return out
 
 
@@ -115,6 +159,12 @@ def encode(msg: Control) -> bytes:
     if isinstance(msg, TalkStop):
         body = _key(1, _VARINT) + _varint(msg.stream_id) if msg.stream_id else b""
         return _len_field(3, body)
+    if isinstance(msg, PairOffer):
+        return _len_field(11, _encode_pair(msg.nonce, msg.button))
+    if isinstance(msg, PairAccept):
+        return _len_field(12, _encode_pair(msg.nonce, msg.button))
+    if isinstance(msg, PairConfirm):
+        return _len_field(13, _encode_pair(msg.nonce, 0))
     raise TypeError(type(msg))
 
 
@@ -209,14 +259,44 @@ def _decode_hello(data: bytes) -> Hello:
         elif num == 6:
             _expect(wire, _VARINT)
             h.bye = bool(value)
+        elif num == 11:
+            _expect(wire, _LEN)
+            h.links.append(_decode_link(value))
     return h
+
+
+def _decode_link(data: bytes) -> Link:
+    button = partner = partner_button = 0
+    for num, wire, value in _fields(data):
+        if num == 1:
+            _expect(wire, _VARINT)
+            button = value & 0xFFFFFFFF
+        elif num == 2:
+            _expect(wire, _I32)
+            partner = value
+        elif num == 3:
+            _expect(wire, _VARINT)
+            partner_button = value & 0xFFFFFFFF
+    return Link(button, partner, partner_button)
+
+
+def _decode_pair(data: bytes) -> tuple[int, int]:
+    nonce = button = 0
+    for num, wire, value in _fields(data):
+        if num == 1:
+            _expect(wire, _I64)
+            nonce = value
+        elif num == 2:
+            _expect(wire, _VARINT)
+            button = value & 0xFFFFFFFF
+    return nonce, button
 
 
 def decode(data: bytes) -> Control | None:
     """Decode a Control message; None if it holds no message we know."""
     msg: Control | None = None
     for num, wire, value in _fields(data):
-        if num in (1, 2, 3):
+        if num in (1, 2, 3, 11, 12, 13):
             _expect(wire, _LEN)
         if num == 1:
             msg = _decode_hello(value)
@@ -237,4 +317,10 @@ def decode(data: bytes) -> Control | None:
                     _expect(w2, _VARINT)
                     stop.stream_id = v2 & 0xFFFFFFFF
             msg = stop
+        elif num == 11:
+            msg = PairOffer(*_decode_pair(value))
+        elif num == 12:
+            msg = PairAccept(*_decode_pair(value))
+        elif num == 13:
+            msg = PairConfirm(_decode_pair(value)[0])
     return msg

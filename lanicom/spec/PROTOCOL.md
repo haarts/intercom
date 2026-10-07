@@ -12,7 +12,7 @@ messages and send audio directly to each other over UDP.
 - All traffic uses UDP port **47100** (configurable; every device in a network
   MUST use the same port). One socket sends and receives both packet types.
 - Discovery uses the IPv4 limited broadcast address `255.255.255.255`.
-- Optional multicast (section 7) uses group `239.255.76.73` on the same port.
+- Optional multicast (section 8) uses group `239.255.76.73` on the same port.
 - A packet MUST NOT exceed 1200 bytes. Receivers drop larger datagrams.
 - IPv6 is out of scope for v1.
 
@@ -149,7 +149,9 @@ The CONTROL plaintext is one protobuf `Control` message, as defined in
 - `name` is a display name (UTF-8, ≤ 32 bytes). A changed name takes effect
   with the next `Hello`.
 - `caps`: bit 0 `PLAYBACK` (plays audio), bit 1 `CAPTURE` (can talk), bit 2 `MONITOR`
-  (wants talk metadata for every stream, e.g. Home Assistant, without receiving audio).
+  (wants talk metadata for every stream, e.g. Home Assistant, without receiving audio),
+  bit 3 `ANNOUNCER` (v1.1: may talk to any device, see section 7).
+- `links` (v1.1): the sender's linked buttons, see section 7.
 
 ### Talk metadata
 
@@ -193,13 +195,69 @@ A talker resolves its `Target` against its peer table at send time:
 - `device`: that peer.
 - `all`: every peer.
 
-To reach a set of devices, a talker sends one stream to each of them: the same
-stream, sealed once per recipient (see below).
+To reach a set of devices, a talker sends one stream to all of them, and each of
+them gets its own `TalkStart` naming it (`device`). Devices can join or leave a
+running stream: a joining device gets its three `TalkStart`s, a leaving one its
+three `TalkStop`s.
 
-It only includes peers that have `PLAYBACK` set and are verified. It seals each
-frame once and sends a copy to every peer in that set (unicast fan-out).
+A talker only includes peers that have `PLAYBACK` set and are verified. It seals
+each frame once and sends a copy to every peer in the set (unicast fan-out).
 
-## 7. Multicast (optional)
+## 7. Buttons and pairing (v1.1)
+
+Devices with buttons (wall boxes) talk only through their buttons. Each button
+is **linked** to exactly one button on another device, its partner. Holding a
+button talks to its partner; holding several talks to all their partners in one
+stream (section 6, Addressing). Buttons are numbered from 1.
+
+### Pairing
+
+1. Holding an unlinked button for 5 s puts it in **pairing mode** for 60 s. A
+   linked button never enters pairing mode (a long hold is a long talk). A short
+   press ends pairing mode.
+2. In pairing mode the device broadcasts `PairOffer {nonce, button}` once a
+   second. `nonce` is random, non-zero, new for each pairing mode.
+3. Every device remembers the offers it hears (sender, nonce, button) until
+   none has arrived for 2.5 s.
+4. When a button enters pairing mode and an offer is known that none of the
+   device's own buttons is already answering, it answers the oldest one (first
+   heard) instead of offering: `PairAccept {nonce, button}` by unicast to the
+   offerer, `button` being its own. It repeats the Accept every 500 ms until it
+   gets a `PairConfirm`, for up to 5 s; then it forgets that offer and offers
+   itself.
+5. If two buttons offer at the same time, the one with the larger nonce accepts
+   the other's offer (unsigned comparison), so exactly one side accepts.
+6. The offerer, on a `PairAccept` whose nonce matches a button in pairing mode
+   that isn't itself accepting, sends `PairConfirm {nonce}` by unicast and saves
+   the link (its button, the sender, the sender's button). A repeated Accept for
+   a link it already made with that nonce gets another Confirm, nothing else.
+7. The accepter saves the link when the matching Confirm arrives.
+
+Pairing messages are ordinary CONTROL traffic, so only holders of the network
+key take part. The 5 s holds on both devices are the user's confirmation.
+
+### Links heal themselves
+
+Every `Hello` lists the sender's links (`Hello.links`). When a device hears a
+verified `Hello` from a partner, it checks each of its links to that partner
+that is older than 15 s. If the Hello doesn't list the reverse link (the
+partner's button, our sender_id, our button), the partner has dropped it, and
+the device drops its side too. Unpairing or resetting a device thus clears its
+partners' buttons with its next Hello; a partner that was offline catches up
+when both are back. There is no unlink message.
+
+A device announces a change of links at once, with a broadcast `Hello`.
+
+### Who plays what
+
+A device with buttons plays audio only from its buttons' partners and from
+peers with `ANNOUNCER` set (Home Assistant). It drops other streams. Anyone with
+the network key can claim `ANNOUNCER`.
+
+Devices that predate v1.1 skip the new fields and messages, and a device
+without buttons plays everything, as in v1.
+
+## 8. Multicast (optional)
 
 A device MAY enable multicast. It then joins `239.255.76.73` and sends frames
 for target `all` to the group once, instead of fanning out. Devices that don't
@@ -210,7 +268,7 @@ Multicast is meant for wired-only installs. On Wi-Fi, multicast is sent at the
 lowest basic rate without retries, and many access points drop or rate-limit
 it, so stay with unicast there.
 
-## 8. Constants
+## 9. Constants
 
 | Name | Value |
 |---|---|
@@ -224,3 +282,9 @@ it, so stay with unicast there.
 | echo rate limit | 10 / s / source |
 | replay window | 64 |
 | stream timeout | 300 ms |
+| pairing hold | 5 s |
+| pairing mode | 60 s |
+| PairOffer interval | 1 s |
+| offer forgotten after | 2.5 s |
+| PairAccept retry | every 500 ms, for 5 s |
+| link grace (no heal check) | 15 s |

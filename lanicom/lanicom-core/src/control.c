@@ -104,6 +104,34 @@ static void encode_hello(wbuf_t *w, const lc_hello_t *h) {
     put_key(w, 6, WT_VARINT);
     put_varint(w, 1);
   }
+  for (uint8_t i = 0; i < h->n_links && i < LC_MAX_LINKS; i++) {
+    const lc_link_t *l = &h->links[i];
+    size_t sub = begin_sub(w, 11);
+    if (l->button) {
+      put_key(w, 1, WT_VARINT);
+      put_varint(w, l->button);
+    }
+    if (l->partner) {
+      put_key(w, 2, WT_I32);
+      put_fixed(w, l->partner, 4);
+    }
+    if (l->partner_button) {
+      put_key(w, 3, WT_VARINT);
+      put_varint(w, l->partner_button);
+    }
+    end_sub(w, sub);
+  }
+}
+
+static void encode_pair(wbuf_t *w, uint64_t nonce, uint32_t button) {
+  if (nonce) {
+    put_key(w, 1, WT_I64);
+    put_fixed(w, nonce, 8);
+  }
+  if (button) {
+    put_key(w, 2, WT_VARINT);
+    put_varint(w, button);
+  }
 }
 
 int lc_control_encode(const lc_control_t *msg, uint8_t *out, size_t cap) {
@@ -140,6 +168,13 @@ int lc_control_encode(const lc_control_t *msg, uint8_t *out, size_t cap) {
         put_key(&w, 1, WT_VARINT);
         put_varint(&w, msg->u.talk_stop.stream_id);
       }
+      end_sub(&w, outer);
+      break;
+    case LC_MSG_PAIR_OFFER:
+    case LC_MSG_PAIR_ACCEPT:
+    case LC_MSG_PAIR_CONFIRM:
+      outer = begin_sub(&w, 11 + (msg->type - LC_MSG_PAIR_OFFER));
+      encode_pair(&w, msg->u.pair.nonce, msg->type == LC_MSG_PAIR_CONFIRM ? 0 : msg->u.pair.button);
       end_sub(&w, outer);
       break;
     default:
@@ -268,8 +303,46 @@ static int decode_hello(const uint8_t *data, size_t len, lc_hello_t *h) {
         EXPECT(f, WT_VARINT);
         h->bye = f.value != 0;
         break;
+      case 11: {
+        EXPECT(f, WT_LEN);
+        lc_link_t l = {0, 0, 0};
+        rbuf_t s = {f.data, f.data + f.len, false};
+        field_t g;
+        while (next_field(&s, &g)) {
+          if (g.num == 1) {
+            EXPECT(g, WT_VARINT);
+            l.button = (uint32_t)g.value;
+          } else if (g.num == 2) {
+            EXPECT(g, WT_I32);
+            l.partner = (uint32_t)g.value;
+          } else if (g.num == 3) {
+            EXPECT(g, WT_VARINT);
+            l.partner_button = (uint32_t)g.value;
+          }
+        }
+        if (s.error)
+          return -1;
+        if (h->n_links < LC_MAX_LINKS)
+          h->links[h->n_links++] = l;
+        break;
+      }
       default:
         break;
+    }
+  }
+  return r.error ? -1 : 0;
+}
+
+static int decode_pair(const uint8_t *data, size_t len, lc_control_t *msg) {
+  rbuf_t r = {data, data + len, false};
+  field_t f;
+  while (next_field(&r, &f)) {
+    if (f.num == 1) {
+      EXPECT(f, WT_I64);
+      msg->u.pair.nonce = f.value;
+    } else if (f.num == 2) {
+      EXPECT(f, WT_VARINT);
+      msg->u.pair.button = (uint32_t)f.value;
     }
   }
   return r.error ? -1 : 0;
@@ -303,6 +376,16 @@ int lc_control_decode(const uint8_t *data, size_t len, lc_control_t *msg) {
   rbuf_t r = {data, data + len, false};
   field_t f, g;
   while (next_field(&r, &f)) {
+    if (f.num >= 11 && f.num <= 13) {
+      EXPECT(f, WT_LEN);
+      msg->type = (lc_msg_type_t)(LC_MSG_PAIR_OFFER + (f.num - 11));
+      memset(&msg->u.pair, 0, sizeof(msg->u.pair));
+      if (decode_pair(f.data, f.len, msg))
+        return -1;
+      if (msg->type == LC_MSG_PAIR_CONFIRM)
+        msg->u.pair.button = 0;
+      continue;
+    }
     if (f.num < 1 || f.num > 3)
       continue;
     EXPECT(f, WT_LEN);

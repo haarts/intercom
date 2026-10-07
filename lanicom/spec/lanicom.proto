@@ -1,12 +1,13 @@
 // LAN intercom control messages. Normative schema; see PROTOCOL.md.
 //
 // The implementations (C core, Python) hand-code this wire format instead of
-// using generated code: five small messages don't justify a code generator in
+// using generated code: a few small messages don't justify a code generator in
 // the firmware build, and generated Python code is tied to the protobuf
 // runtime version (which Home Assistant pins). The test suites check both
 // codecs against the official protobuf library, using this file.
 //
 // Unknown fields MUST be skipped, so fields can be added without a version bump.
+// Links, pairing and CAP_ANNOUNCER (v1.1 in PROTOCOL.md) were added that way.
 
 syntax = "proto3";
 package lanicom.v1;
@@ -23,6 +24,15 @@ message Target {
 // CAP_PLAYBACK (1): plays audio. Talkers don't send audio to peers without it.
 // CAP_CAPTURE  (2): can talk.
 // CAP_MONITOR  (4): wants TalkStart/TalkStop for every stream, without audio.
+// CAP_ANNOUNCER (8): may talk to any device (Home Assistant). Devices with
+//                    buttons play only their partners' and announcers' audio.
+
+// One button's link to a button on another device (PROTOCOL.md, "Buttons").
+message Link {
+  uint32 button = 1;          // ours, 1-based
+  fixed32 partner = 2;        // the partner's sender_id
+  uint32 partner_button = 3;  // the partner's, 1-based
+}
 
 message Hello {
   string name = 1;
@@ -34,6 +44,8 @@ message Hello {
   fixed64 echo = 5;
   // Set when the device shuts down cleanly; peers forget it at once.
   bool bye = 6;
+  // Every linked button, so partners can drop links we no longer have.
+  repeated Link links = 11;  // 7-10: left free (the test vectors use them as unknown fields)
 }
 
 message TalkStart {
@@ -45,10 +57,27 @@ message TalkStop {
   uint32 stream_id = 1;
 }
 
+// Pairing (PROTOCOL.md, "Buttons"). `button` is 1-based.
+message PairOffer {   // broadcast once a second while a button is in pairing mode
+  fixed64 nonce = 1;
+  uint32 button = 2;
+}
+message PairAccept {  // unicast to the offerer
+  fixed64 nonce = 1;
+  uint32 button = 2;
+}
+message PairConfirm { // unicast back to the accepter; both now have the link
+  fixed64 nonce = 1;
+}
+
 message Control {
   oneof msg {
     Hello hello = 1;
     TalkStart talk_start = 2;
     TalkStop talk_stop = 3;
+    // 4-10: left free (the test vectors use 4 as an unknown field)
+    PairOffer pair_offer = 11;
+    PairAccept pair_accept = 12;
+    PairConfirm pair_confirm = 13;
   }
 }
