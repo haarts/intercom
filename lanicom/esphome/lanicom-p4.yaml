@@ -259,6 +259,8 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     lambda: 'return id(intercom).peer_count();'
+    filters:
+      - delta: 0.5  # only publish changes
   - platform: template
     name: "Dropped packets"
     icon: "mdi:shield-alert"
@@ -268,6 +270,8 @@ sensor:
     lambda: |-
       auto s = id(intercom).get_stats();
       return s.foreign + s.auth + s.replay + s.malformed + s.unverified;
+    filters:
+      - delta: 0.5  # only publish changes
 
 text_sensor:
   - platform: template
@@ -275,6 +279,12 @@ text_sensor:
     icon: "mdi:format-list-bulleted"
     update_interval: 10s
     lambda: 'return id(intercom).peers_summary();'
+    filters:
+      - lambda: |-
+          static std::string last;  // only publish changes
+          if (x == last) return {};
+          last = x;
+          return x;
   - platform: ethernet_info
     ip_address:
       name: IP Address
@@ -284,21 +294,45 @@ text_sensor:
     icon: "mdi:link-variant"
     update_interval: 2s
     lambda: 'return id(intercom).partner_summary(0);'
+    filters:
+      - lambda: |-
+          static std::string last;  // only publish changes
+          if (x == last) return {};
+          last = x;
+          return x;
   - platform: template
     name: "Button 2 partner"
     icon: "mdi:link-variant"
     update_interval: 2s
     lambda: 'return id(intercom).partner_summary(1);'
+    filters:
+      - lambda: |-
+          static std::string last;  // only publish changes
+          if (x == last) return {};
+          last = x;
+          return x;
   - platform: template
     name: "Button 3 partner"
     icon: "mdi:link-variant"
     update_interval: 2s
     lambda: 'return id(intercom).partner_summary(2);'
+    filters:
+      - lambda: |-
+          static std::string last;  // only publish changes
+          if (x == last) return {};
+          last = x;
+          return x;
   - platform: template
     name: "Button 4 partner"
     icon: "mdi:link-variant"
     update_interval: 2s
     lambda: 'return id(intercom).partner_summary(3);'
+    filters:
+      - lambda: |-
+          static std::string last;  // only publish changes
+          if (x == last) return {};
+          last = x;
+          return x;
   - platform: version
     name: "Firmware"
     hide_timestamp: true
