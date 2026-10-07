@@ -1,5 +1,12 @@
 # lanicom on an M5Stack AtomS3 Lite with the Atomic Audio-3.5 Base: a one-button intercom.
 #
+# DOES NOT WORK (2026-10-07). The AtomS3 Lite has no PSRAM: Wi-Fi, the web server and Opus
+# (encoder 31.6 KB, decoders 18.4 KB each, a 60 KB scratch area) don't fit in 512 KB of
+# on-chip RAM. Pairing worked; receiving didn't crash but played nothing; talking crashed in
+# the encoder every time. Use a board with PSRAM (AtomS3R, XIAO ESP32S3, the P4) instead.
+# The pins, the base's I/O expander and the 32-bit-slot / no-MCLK codec setup below are
+# still right for the Atomic Audio-3.5 Base.
+#
 # The top button is the box's one button: hold it 5 s to pair it with a button on another box
 # (docs/buttons.md), then hold it to talk to that partner. The RGB LED is its ring.
 #
