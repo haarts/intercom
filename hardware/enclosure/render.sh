@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Render the enclosure: STLs, preview PNGs and a collision check, into out/.
 #
-#   ./render.sh                         # uses `openscad` from PATH (a 2025+ development snapshot)
+#   ./render.sh                         # uses openscad-nightly if found, else openscad (2025+ snapshot)
 #   OPENSCAD=~/bin/OpenSCAD.AppImage ./render.sh
 set -euo pipefail
 cd "$(dirname "$0")"
-SCAD=${OPENSCAD:-openscad}
+SCAD=${OPENSCAD:-$(command -v openscad-nightly || echo openscad)}
 OPTS=(--backend=manifold)
 mkdir -p out
 

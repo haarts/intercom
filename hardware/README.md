@@ -71,8 +71,8 @@ Still open:
 ## Enclosure prototype (3D print)
 
 ```
-enclosure/render.sh        # needs an OpenSCAD development snapshot (2025 or later) as `openscad`,
-                           # or OPENSCAD=/path/to/OpenSCAD.AppImage
+enclosure/render.sh        # needs an OpenSCAD development snapshot (2025 or later): `openscad-nightly`,
+                           # `openscad`, or OPENSCAD=/path/to/OpenSCAD.AppImage
 ```
 
 The model is one file, `enclosure/intercom.scad`. Every dimension a test print may change is a
