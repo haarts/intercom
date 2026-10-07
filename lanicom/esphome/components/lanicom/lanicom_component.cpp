@@ -132,7 +132,7 @@ void LanicomComponent::setup() {
              this);
 
   // Audio at high priority on its own core; networking at normal priority.
-  if (xTaskCreatePinnedToCore(audio_task, "lanicom_audio", 16384, this, 18, &this->audio_task_handle_,
+  if (xTaskCreatePinnedToCore(audio_task, "lanicom_audio", this->audio_stack_, this, 18, &this->audio_task_handle_,
                               this->task_core_) != pdPASS ||
       xTaskCreate(net_task, "lanicom_net", 8192, this, 10, &this->net_task_handle_) != pdPASS) {
     ESP_LOGE(TAG, "Could not start tasks");

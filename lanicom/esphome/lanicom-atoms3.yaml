@@ -56,10 +56,7 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   power_save_mode: none  # voice: no 100 ms sleeps between beacons
-  ap:
-    ssid: "Intercom Atom setup"
-
-captive_portal:
+  # No fallback hotspot / captive portal: RAM is too tight without PSRAM.
 
 logger:
   hardware_uart: USB_SERIAL_JTAG
@@ -161,11 +158,12 @@ lanicom:
   name_text_id: intercom_name
   jitter_buffer: 40ms  # Wi-Fi: more jitter than wired
   jitter_buffer_max: 100ms
-  frame_duration: 20ms  # half the packet rate, kinder to Wi-Fi
+  frame_duration: 10ms  # 20 ms frames need more Opus scratch than this board has
   bitrate: 24000
-  complexity: 3
+  complexity: 1
   mic_warmup: 50ms
   max_streams: 2  # the partner, plus a Home Assistant announcement; RAM is tight without PSRAM
+  audio_stack: 24576
   time_id: sntp_clock
   buttons:
     - { button: top_button, ring: led_ring }
