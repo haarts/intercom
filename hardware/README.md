@@ -7,7 +7,7 @@ plate. The box sits on the in-wall box the UTP comes out of, with its back again
 | Path | What | Status |
 |---|---|---|
 | `plate/front-plate-arches.dxf` | Front plate for the laser cutter | Holes corrected (below). Grille pattern still to check with the cutter. |
-| `enclosure/enclosure.py` | Parametric CadQuery model of the 3D-printed prototype: shell, wall plate, mic tube | Second version (carrier + ESP32-P4-ETH), not printed yet |
+| `enclosure/intercom.scad` | Parametric OpenSCAD model of the 3D-printed prototype: shell, wall plate, mic tube | Carrier + ESP32-P4-ETH version, not printed yet |
 | `carrier/` | KiCad project for the button/LED carrier board | Rev A schematic and PCB done: ERC clean, DRC 0 errors / 0 unconnected. PDFs, BOM and gerbers in `carrier/export/`. |
 
 ## GPIO map (P4-ETH header P1, Pico-style numbering)
@@ -71,11 +71,24 @@ Still open:
 ## Enclosure prototype (3D print)
 
 ```
-python enclosure/enclosure.py        # needs CadQuery (Python ≤ 3.13): pip install cadquery
+enclosure/render.sh        # needs an OpenSCAD development snapshot (2025 or later) as `openscad`,
+                           # or OPENSCAD=/path/to/OpenSCAD.AppImage
 ```
 
-This writes `enclosure/out/shell.stl`, `wall_plate.stl`, `mic_tube.stl`, `assembly.step` (with the plate,
-the electronics, speaker and buttons as blocks), and SVG views. It also checks the parts for collisions.
+The model is one file, `enclosure/intercom.scad`. Every dimension a test print may change is a
+parameter at its top. Open it in OpenSCAD to look around: `part` selects what is shown
+(`assembly`, `shell`, `wall_plate`, `mic_tube`, `section`).
+
+It is designed in front-view coordinates (X right, Y up, Z into the wall), the way the plate
+drawing and KiCad's top view read. Every output is mirrored once into the right-handed frame
+that slicers use; without that, the print would be a mirror image of the box.
+
+`render.sh` writes to `enclosure/out/`:
+- `shell.stl`, `wall_plate.stl` and `mic_tube.stl`;
+- preview PNGs: front, back, iso, inside, inside_iso and a section through the carrier;
+- a collision check between the shell, the plate, the electronics, the speaker, the buttons
+  and the mic tube, with the electronics, speaker and buttons as blocks. It fails if any two
+  of them overlap (faces that merely touch are fine).
 
 **Shell, 185.4 × 95.4 × 52 mm:**
 - **Plate:** sits in a rebate, flush with the front, and is screwed to four corner bosses with M3 heat-set inserts.
