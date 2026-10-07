@@ -95,7 +95,7 @@ be able to unlink the kitchen.
 |---|---|
 | "Unpair" next to a button, on the web page or in Home Assistant | That button's link |
 | "Factory reset" on the web page or in Home Assistant (ESPHome's `factory_reset` button) | Everything saved at runtime: links, brightness, and a network key or name changed on the page. Baked-in values (the key, the name) come back. |
-| Power-cycle the device 5 times within 10 s (ESPHome's `factory_reset: resets_required: 5`) | The same, for when the network side is broken. On PoE: toggle the switch port, or the cable. The rings flash on each count (`on_increment`). |
+| Power-cycle the device 5 times within 10 s (ESPHome's `factory_reset: resets_required: 5`) | The same, for when the network side is broken. On PoE: toggle the switch port, or the cable. The rings flash on each count (`on_increment`). Five deliberate cycles in 10 s don't happen by accident, not even with a flaky switch or a flickering power cut. |
 
 The partner's side of a removed link clears itself (see "Links heal themselves").
 
@@ -168,8 +168,3 @@ custom web code.
   version, uptime.
 - **Firmware update:** a file upload on the page (ESPHome `ota: platform: web_server`), next
   to the network OTA. Once the P4 is in the box, USB is out of reach.
-
-## Open
-
-- What the 1-button devices (children's rooms) do with the extra power-cycle reset: is
-  5 cycles within 10 s safe against a flaky PoE switch or a power cut that flickers?
