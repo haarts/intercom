@@ -101,6 +101,13 @@ lc_led_state_t lc_buttons_led(const lc_buttons_t *bt, uint8_t i, bool transmitti
                               size_t n_receiving, uint32_t now_ms);
 /* Ring brightness 0..1 for a state; `idle` is the steady brightness of a linked ring. */
 float lc_led_level(lc_led_state_t state, float idle, uint32_t now_ms);
+/* Start-up sweep: ring i of n fades up and down, one after the other (1 -> n). `ms` is the
+ * time since start; returns -1 once the sweep is over. */
+#define LC_BOOT_FADE_MS 800
+#define LC_BOOT_STEP_MS 250
+float lc_led_boot_level(uint8_t i, uint8_t n, uint32_t ms);
+/* Night: the hour (0-23) lies in [start, end), wrapping past midnight; start == end: never. */
+bool lc_is_night(int hour, int start, int end);
 
 #ifdef __cplusplus
 }

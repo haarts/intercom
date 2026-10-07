@@ -28,6 +28,9 @@
 #ifdef USE_TEXT
 #include "esphome/components/text/text.h"
 #endif
+#ifdef USE_TIME
+#include "esphome/components/time/real_time_clock.h"
+#endif
 
 extern "C" {
 #include "lanicom/lanicom.h"
@@ -73,7 +76,26 @@ class LanicomComponent : public Component {
     this->button_sensors_.push_back(sensor);
     this->button_rings_.push_back(ring);
   }
-  void set_ring_brightness(float level) { this->ring_idle_ = level; }
+  // Steady brightness of linked rings (0..1): all at once, or one button (0-based).
+  void set_ring_brightness(float level) {
+    for (float &l : this->ring_idle_)
+      l = level;
+  }
+  void set_ring_brightness(size_t button, float level) {
+    if (button < LC_MAX_BUTTONS)
+      this->ring_idle_[button] = level;
+  }
+  // Night: rings use night_brightness instead, between these hours (needs a clock).
+  void set_night_brightness(float level) { this->night_idle_ = level; }
+  void set_night_hours(int start, int end) {
+    this->night_start_ = start;
+    this->night_end_ = end;
+  }
+  void set_night_start(int hour) { this->night_start_ = hour; }
+  void set_night_end(int hour) { this->night_end_ = hour; }
+#ifdef USE_TIME
+  void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }
+#endif
 
   // Runtime API (main loop).
   void start_talking(const std::string &target);
@@ -84,7 +106,8 @@ class LanicomComponent : public Component {
   void unpair(size_t button);
   // Flash every ring (identify: 10 s; also the reset counter, briefly).
   void identify(uint32_t ms = 10000) { this->identify_until_ = millis() + ms; }
-  float get_ring_brightness() const { return this->ring_idle_; }
+  float get_ring_brightness(size_t button) const { return button < LC_MAX_BUTTONS ? this->ring_idle_[button] : 0; }
+  bool is_night();
   bool is_talking() const { return this->talk_requested_; }
   bool is_transmitting() const { return this->transmitting_.load(); }
   bool is_receiving() const { return this->receiving_.load(); }
@@ -193,8 +216,14 @@ class LanicomComponent : public Component {
     lc_button_link_t links[LC_MAX_BUTTONS];
   } links_{};
   ESPPreferenceObject links_pref_;
-  float ring_idle_{0.1f};
+  float ring_idle_[LC_MAX_BUTTONS]{0.1f, 0.1f, 0.1f, 0.1f};
+  float night_idle_{0.02f};
+  int night_start_{22}, night_end_{7};
+#ifdef USE_TIME
+  time::RealTimeClock *clock_{nullptr};
+#endif
   uint32_t identify_until_{0};
+  uint32_t boot_ms_{0};  // start of the boot sweep
   std::atomic<uint32_t> rx_senders_[LC_RX_STREAMS]{};  // sender of each playing stream, 0: none
 
   // I2S bus (main loop only).

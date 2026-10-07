@@ -571,6 +571,19 @@ static void test_pairing_edges(void) {
   CHECK(lc_led_level(LC_LED_RECEIVING, 0.1f, 0) == 0.1f);
   CHECK(lc_led_level(LC_LED_RECEIVING, 0.1f, 500) == 1.0f);
   CHECK(lc_led_level(LC_LED_OFFLINE, 0.1f, 3050) == 0.0f);
+
+  /* Boot sweep: ring 1 peaks first, ring 4 last; then it's over. */
+  CHECK(lc_led_boot_level(0, 4, LC_BOOT_FADE_MS / 2) == 1.0f);
+  CHECK(lc_led_boot_level(3, 4, LC_BOOT_FADE_MS / 2) == 0.0f);
+  CHECK(lc_led_boot_level(3, 4, 3 * LC_BOOT_STEP_MS + LC_BOOT_FADE_MS / 2) == 1.0f);
+  CHECK(lc_led_boot_level(0, 4, 3 * LC_BOOT_STEP_MS + LC_BOOT_FADE_MS) < 0.0f);
+  CHECK(lc_led_boot_level(0, 1, LC_BOOT_FADE_MS / 2) == 1.0f);
+  CHECK(lc_led_boot_level(0, 1, LC_BOOT_FADE_MS) < 0.0f);
+
+  /* Night hours. */
+  CHECK(lc_is_night(23, 22, 7) && lc_is_night(3, 22, 7) && !lc_is_night(7, 22, 7) && !lc_is_night(12, 22, 7));
+  CHECK(lc_is_night(14, 13, 15) && !lc_is_night(15, 13, 15));
+  CHECK(!lc_is_night(3, 5, 5) && !lc_is_night(-1, 22, 7));
 }
 
 void test_engine(void) {

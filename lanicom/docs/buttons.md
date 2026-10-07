@@ -8,8 +8,6 @@ LED rings show. Designed 2026-10-07, built the same day:
 - device: the `buttons:` option of the ESPHome component, set up in
   [`lanicom-p4.yaml`](../esphome/lanicom-p4.yaml).
 
-Not built yet: night brightness, the boot sweep, and a brightness per button (there is one
-"Ring brightness" for all of them).
 
 ## Decided
 
@@ -146,7 +144,7 @@ These override the per-button states.
 
 | State | Pattern | Meaning |
 |---|---|---|
-| Booting | One fade up and down (on 4 buttons: a sweep 1 → 4). Not built yet | Starting up |
+| Booting | One fade up and down (on 4 buttons: a sweep 1 → 4) | Starting up |
 | Announcement | All rings breathe together | Home Assistant is talking to this device |
 | Reset count | One flash per power cycle | Counting towards a factory reset |
 | Identify | All rings flash for 10 s | "Identify" pressed on the web page |
@@ -166,13 +164,13 @@ custom web code.
 - **Per button:**
   - its partner (device name and button) and whether it is online;
   - "Unpair";
-  - the ring's idle brightness (built as one "Ring brightness" for all rings).
+  - the ring's idle brightness ("Button N brightness").
 - **Device:**
   - name;
   - network key (defaults to the baked-in one);
   - speaker volume and mic gain (already there);
-  - night brightness for the rings, and the hours it applies (needs the time from Home
-    Assistant or SNTP). Not built yet;
+  - night brightness for the rings, and the hours it applies ("Night from", "Night
+    until"; the clock comes from SNTP, and without it the rings stay at day brightness);
   - "Identify": all rings flash for 10 s, to find which box this is;
   - "Restart" (already there) and "Factory reset".
 - **Status (read-only):** IP address, peers, dropped packets (already there), firmware

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from esphome import automation
 import esphome.codegen as cg
-from esphome.components import binary_sensor, microphone, output, socket, speaker, text
+from esphome.components import binary_sensor, microphone, output, socket, speaker, text, time
 from esphome.components.esp32 import add_idf_component, add_idf_sdkconfig_option
 import esphome.config_validation as cv
 from esphome.const import CONF_ID, CONF_MICROPHONE, CONF_PORT, CONF_SPEAKER
@@ -39,6 +39,10 @@ CONF_BUTTONS = "buttons"
 CONF_BUTTON = "button"
 CONF_RING = "ring"
 CONF_RING_BRIGHTNESS = "ring_brightness"
+CONF_NIGHT_BRIGHTNESS = "night_brightness"
+CONF_NIGHT_START = "night_start"
+CONF_NIGHT_END = "night_end"
+CONF_TIME_ID = "time_id"
 CONF_ON_RECEIVE_START = "on_receive_start"
 CONF_ON_RECEIVE_END = "on_receive_end"
 CONF_ON_PEER_ADDED = "on_peer_added"
@@ -107,6 +111,12 @@ CONFIG_SCHEMA = cv.All(
                 cv.Length(min=1, max=4),
             ),
             cv.Optional(CONF_RING_BRIGHTNESS, default="10%"): cv.percentage,
+            # Dimmer rings at night, from night_start to night_end (hours, local time). Needs a
+            # clock (time_id); without one it's always day.
+            cv.Optional(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
+            cv.Optional(CONF_NIGHT_BRIGHTNESS, default="2%"): cv.percentage,
+            cv.Optional(CONF_NIGHT_START, default=22): cv.int_range(min=0, max=23),
+            cv.Optional(CONF_NIGHT_END, default=7): cv.int_range(min=0, max=23),
             cv.Optional(CONF_ON_RECEIVE_START): automation.validate_automation(single=True),
             cv.Optional(CONF_ON_RECEIVE_END): automation.validate_automation(single=True),
             cv.Optional(CONF_ON_PEER_ADDED): automation.validate_automation(single=True),
@@ -173,6 +183,10 @@ async def to_code(config):
         ring = await cg.get_variable(button[CONF_RING]) if CONF_RING in button else cg.nullptr
         cg.add(var.add_button(sensor, ring))
     cg.add(var.set_ring_brightness(config[CONF_RING_BRIGHTNESS]))
+    cg.add(var.set_night_brightness(config[CONF_NIGHT_BRIGHTNESS]))
+    cg.add(var.set_night_hours(config[CONF_NIGHT_START], config[CONF_NIGHT_END]))
+    if CONF_TIME_ID in config:
+        cg.add(var.set_clock(await cg.get_variable(config[CONF_TIME_ID])))
 
     for conf_key, getter, args in (
         (CONF_ON_RECEIVE_START, "get_receive_start_trigger", [(cg.std_string, "name")]),

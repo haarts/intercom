@@ -65,6 +65,7 @@ void LanicomComponent::setup() {
   if (this->name_.empty())
     this->name_ = App.get_friendly_name().empty() ? App.get_name().str() : App.get_friendly_name().str();
 
+  this->boot_ms_ = millis();
   this->links_pref_ = global_preferences->make_preference<PersistedLinks>(fnv1_hash("lanicom_links"), true);
   if (!this->links_pref_.load(&this->links_))
     this->links_ = {};
@@ -283,11 +284,15 @@ void LanicomComponent::update_rings_() {
     for (size_t i = 0; i < this->button_rings_.size(); i++)
       states[i] = lc_buttons_led(&this->buttons_, (uint8_t) i, this->transmitting_, rx, n_rx, now);
   }
+  bool night = this->is_night();
   for (size_t i = 0; i < this->button_rings_.size(); i++) {
     if (this->button_rings_[i] == nullptr)
       continue;
-    float level;
-    if ((int32_t) (this->identify_until_ - now) > 0) {
+    float idle = night ? this->night_idle_ : this->ring_idle_[i];
+    float level = lc_led_boot_level((uint8_t) i, (uint8_t) this->button_rings_.size(), now - this->boot_ms_);
+    if (level >= 0.0f) {
+      // starting up: one sweep across the rings
+    } else if ((int32_t) (this->identify_until_ - now) > 0) {
       level = now % 500 < 250 ? 1.0f : 0.0f;  // identify: all rings flash
     } else if (!this->network_up_) {
       level = now % 2000 < 100 ? 1.0f : 0.0f;  // no network: a short blink every 2 s
@@ -295,12 +300,23 @@ void LanicomComponent::update_rings_() {
       uint32_t ph = now % 2000;  // no network key: triple blink
       level = ph < 600 && ph % 200 < 100 ? 1.0f : 0.0f;
     } else if (announcement) {
-      level = lc_led_level(LC_LED_RECEIVING, this->ring_idle_, now);  // all rings breathe together
+      level = lc_led_level(LC_LED_RECEIVING, idle, now);  // all rings breathe together
     } else {
-      level = lc_led_level(states[i], this->ring_idle_, now);
+      level = lc_led_level(states[i], idle, now);
     }
     this->button_rings_[i]->set_level(level);
   }
+}
+
+bool LanicomComponent::is_night() {
+#ifdef USE_TIME
+  if (this->clock_ != nullptr) {
+    ESPTime t = this->clock_->now();
+    if (t.is_valid())
+      return lc_is_night(t.hour, this->night_start_, this->night_end_);
+  }
+#endif
+  return false;  // no clock: always day
 }
 
 std::string LanicomComponent::partner_summary(size_t button) {

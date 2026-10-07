@@ -339,3 +339,20 @@ float lc_led_level(lc_led_state_t state, float idle, uint32_t now_ms) {
       return 0.0f;
   }
 }
+
+float lc_led_boot_level(uint8_t i, uint8_t n, uint32_t ms) {
+  if (n == 0 || ms >= (uint32_t)(n - 1) * LC_BOOT_STEP_MS + LC_BOOT_FADE_MS)
+    return -1.0f;
+  uint32_t start = (uint32_t)i * LC_BOOT_STEP_MS;
+  if (ms < start || ms >= start + LC_BOOT_FADE_MS)
+    return 0.0f;
+  float p = (float)(ms - start) / (float)LC_BOOT_FADE_MS;
+  float t = p < 0.5f ? 2.0f * p : 2.0f - 2.0f * p;
+  return t * t * (3.0f - 2.0f * t);
+}
+
+bool lc_is_night(int hour, int start, int end) {
+  if (start == end || hour < 0)
+    return false;
+  return start < end ? hour >= start && hour < end : hour >= start || hour < end;
+}
