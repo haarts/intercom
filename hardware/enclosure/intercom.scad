@@ -21,6 +21,8 @@
 //
 // Every number that a test print may change is a parameter below.
 
+use <../plate/front-plate-arches.scad>  // plate_2d(), generated from the DXF by dxf2scad.py
+
 part = "assembly";  // assembly | shell | wall_plate | mic_tube | section
                     // or a collision probe: "hit" with hit_a / hit_b (see render.sh)
 hit_a = "shell";
@@ -34,9 +36,7 @@ E = 0.01;  // overlap for clean boolean cuts
 PLATE_W = 180; PLATE_H = 90; PLATE_T = 3;
 PLATE_HOLES = [[6, 6], [174, 6], [6, 84], [174, 84]];
 BUTTONS_X = [42, 74, 106, 138]; BUTTON_Y = 14;
-BUTTON_HOLE_D = 19.4;
 BUTTON_BODY_D = 19; BUTTON_BODY_L = 43;  // body plus plug, behind the plate (measure!)
-GRILLE = [8, 25, 172, 82];  // x0, y0, x1, y1 of the grille openings
 
 // --- shell ---
 WALL = 2.4;          // side walls, outside the plate edge
@@ -75,6 +75,10 @@ function p4_xy(mx, my) = [92 + my, 73 - mx];
 // top-port: the hole is in its lid, near the end towards the USB-C (checked on the board;
 // position estimated ~0.8 mm from that end). So it hears towards the plate.
 MIC_XY = p4_xy(4.0, 74.2);  // the lid's sound hole: where the mic tube points
+// Where the mic tube meets the plate: the centre of a grille opening near the mic, with
+// 1.3 mm of brass-free margin around the bore (found by searching the DXF). The tube is
+// slanted (~7 degrees) between this point and MIC_XY. Rerun the search if the plate changes.
+MIC_GRILLE_XY = [169.2, 68.6];
 RJ45_H = 13.3;
 POE_H = 13;          // PoE module (B) on the 6-pin header: socket ~9 mm, then its PCB and parts
 POE_Y = [20, 52];    // along the P4
@@ -196,26 +200,26 @@ module wall_plate() {
 }
 
 // Tube from the back of the plate to just in front of the mic (stops clear of the USB-C).
-// Glue it behind a grille opening; a foam ring closes the last gap to the P4.
+// It starts behind a grille opening and slants to the mic's sound hole. Glue its flange to
+// the back of the plate; a foam ring closes the last gap to the P4.
 module mic_tube() {
-  length = (Z_P4 - 3.6) - PLATE_T;
-  translate([MIC_XY[0], MIC_XY[1], PLATE_T]) difference() {
+  a = [MIC_GRILLE_XY[0], MIC_GRILLE_XY[1], PLATE_T];  // plate end
+  b = [MIC_XY[0], MIC_XY[1], Z_P4 - 3.6];              // mic end
+  module rod(r, extra = 0) hull() {
+    translate(a - [0, 0, extra]) cylinder(r = r, h = E);
+    translate(b + [0, 0, extra]) cylinder(r = r, h = E);
+  }
+  difference() {
     union() {
-      cylinder(r = 3, h = length);
-      cylinder(r = 5, h = 1.2);  // glue flange
+      rod(3);
+      translate(a) cylinder(r = 5, h = 1.2);  // glue flange
     }
-    translate([0, 0, -E]) cylinder(r = 1.5, h = length + 2 * E);
+    rod(1.5, 1);
   }
 }
 
-// Simplified plate, for checking the assembly (the real one is the DXF).
-module plate_dummy() {
-  difference() {
-    cube([PLATE_W, PLATE_H, PLATE_T]);
-    for (x = BUTTONS_X) translate([x, BUTTON_Y, -1]) cylinder(d = BUTTON_HOLE_D, h = PLATE_T + 2);
-    box(GRILLE[0], GRILLE[1], -E, GRILLE[2] - GRILLE[0], GRILLE[3] - GRILLE[1], 1);
-  }
-}
+// The brass plate, from the laser-cutting DXF.
+module plate() { linear_extrude(PLATE_T) plate_2d(); }
 
 // --- parts that live in the box, as simple blocks --------------------------
 
@@ -250,7 +254,9 @@ module item(name) {
   else if (name == "electronics") carrier_stack();
   else if (name == "speaker") speaker();
   else if (name == "buttons") buttons();
-  else if (name == "plate") plate_dummy();
+  else if (name == "plate") plate();
+  // The mic tube's bore where it meets the plate: render.sh measures how much brass covers it.
+  else if (name == "mic_bore") translate([MIC_GRILLE_XY[0], MIC_GRILLE_XY[1], -1]) cylinder(r = 1.5, h = PLATE_T + 2);
 }
 
 // --- output ----------------------------------------------------------------
@@ -261,7 +267,7 @@ module real() { translate([PLATE_W, 0, 0]) mirror([1, 0, 0]) children(); }
 module assembly() {
   color("peru") shell();
   color("silver") wall_plate();
-  color("goldenrod") plate_dummy();
+  color("goldenrod") plate();
   color("dimgray") mic_tube();
   color("steelblue", 0.7) carrier_stack();
   color("steelblue", 0.7) speaker();
