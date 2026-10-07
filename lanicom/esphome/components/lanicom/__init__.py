@@ -33,6 +33,7 @@ CONF_COMPLEXITY = "complexity"
 CONF_MIC_WARMUP = "mic_warmup"
 CONF_SPEAKER_HOLD = "speaker_hold"
 CONF_TASK_CORE = "task_core"
+CONF_MAX_STREAMS = "max_streams"
 CONF_OPUS_PATH = "opus_path"
 CONF_TARGET = "target"
 CONF_BUTTONS = "buttons"
@@ -94,6 +95,8 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_MIC_WARMUP, default="50ms"): cv.positive_time_period_milliseconds,
             cv.Optional(CONF_SPEAKER_HOLD, default="3s"): cv.positive_time_period_milliseconds,
             cv.Optional(CONF_TASK_CORE, default=1): cv.int_range(min=0, max=1),
+            # Streams played at once, one Opus decoder (~20 KB) each. Lower it without PSRAM.
+            cv.Optional(CONF_MAX_STREAMS, default=4): cv.int_range(min=1, max=4),
             # Use a local micro-opus copy (e.g. esp32-mumble/lib/micro-opus) instead of the registry's.
             cv.Optional(CONF_OPUS_PATH): cv.directory,
             # Wall-box buttons, in order (1-4). Each one is paired with one button on another box
@@ -178,6 +181,7 @@ async def to_code(config):
     cg.add(var.set_mic_warmup_ms(config[CONF_MIC_WARMUP].total_milliseconds))
     cg.add(var.set_speaker_hold_ms(config[CONF_SPEAKER_HOLD].total_milliseconds))
     cg.add(var.set_task_core(config[CONF_TASK_CORE]))
+    cg.add(var.set_max_streams(config[CONF_MAX_STREAMS]))
     for button in config.get(CONF_BUTTONS, []):
         sensor = await cg.get_variable(button[CONF_BUTTON])
         ring = await cg.get_variable(button[CONF_RING]) if CONF_RING in button else cg.nullptr

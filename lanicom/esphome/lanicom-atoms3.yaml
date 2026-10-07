@@ -165,6 +165,7 @@ lanicom:
   bitrate: 24000
   complexity: 3
   mic_warmup: 50ms
+  max_streams: 2  # the partner, plus a Home Assistant announcement; RAM is tight without PSRAM
   time_id: sntp_clock
   buttons:
     - { button: top_button, ring: led_ring }

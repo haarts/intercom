@@ -71,6 +71,8 @@ class LanicomComponent : public Component {
   void set_mic_warmup_ms(uint32_t ms) { this->mic_warmup_ms_ = ms; }
   void set_speaker_hold_ms(uint32_t ms) { this->speaker_hold_ms_ = ms; }
   void set_task_core(int core) { this->task_core_ = core; }
+  // Streams played at once (one Opus decoder each, ~20 KB): fewer on boards without PSRAM.
+  void set_max_streams(int n) { this->max_streams_ = n; }
   // Buttons (1-4): the button's binary sensor and its ring (optional).
   void add_button(binary_sensor::BinarySensor *sensor, output::FloatOutput *ring) {
     this->button_sensors_.push_back(sensor);
@@ -175,6 +177,7 @@ class LanicomComponent : public Component {
   uint32_t mic_warmup_ms_{50};
   uint32_t speaker_hold_ms_{3000};
   int task_core_{1};
+  int max_streams_{LC_RX_STREAMS};
 
   // Identity, persisted: sender id and a boot counter (high half of the epoch).
   struct Persisted {

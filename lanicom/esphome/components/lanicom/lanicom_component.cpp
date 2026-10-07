@@ -758,14 +758,23 @@ void LanicomComponent::audio_run_() {
       opus_encoder_ctl(this->encoder_, OPUS_SET_PACKET_LOSS_PERC(10));
     }
   }
-  for (auto &dec : this->decoders_) {
-    dec = opus_decoder_create(SAMPLE_RATE, 1, &err);
-    if (dec == nullptr)
+  // Opus allocates its scratch area (CONFIG_OPUS_PSEUDOSTACK_SIZE, one block) on first use.
+  // Use it now, before the decoders split up the free RAM, so it fails here if it fails at all.
+  if (this->encoder_ != nullptr) {
+    int16_t silence[SAMPLE_RATE / 50] = {};
+    uint8_t out[64];
+    if (opus_encode(this->encoder_, silence, SAMPLE_RATE / 50, out, sizeof(out)) < 0)
+      ESP_LOGE(TAG, "Opus test encode failed");
+    opus_encoder_ctl(this->encoder_, OPUS_RESET_STATE);
+  }
+  for (int i = 0; i < LC_RX_STREAMS && i < this->max_streams_; i++) {
+    this->decoders_[i] = opus_decoder_create(SAMPLE_RATE, 1, &err);
+    if (this->decoders_[i] == nullptr)
       ESP_LOGE(TAG, "Opus decoder: %d", err);
   }
 
-  ESP_LOGI(TAG, "Opus ready; free internal RAM %u bytes (largest block %u)",
-           (unsigned) heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+  ESP_LOGI(TAG, "Opus ready (encoder %d, decoder %d bytes); free internal RAM %u bytes (largest block %u)",
+           opus_encoder_get_size(1), opus_decoder_get_size(1), (unsigned) heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
            (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
   const uint32_t frame_samples = SAMPLE_RATE * this->frame_ms_ / 1000;
   std::vector<int16_t> frame(frame_samples);
