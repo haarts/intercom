@@ -34,6 +34,7 @@ E = 0.01;  // overlap for clean boolean cuts
 
 // --- plate (from the DXF: 180 x 90 x 3, M3 holes 6 mm from the edges) ---
 PLATE_W = 180; PLATE_H = 90; PLATE_T = 3;
+PLATE_R = 3;  // corner radius (from the DXF)
 PLATE_HOLES = [[6, 6], [174, 6], [6, 84], [174, 84]];
 BUTTONS_X = [42, 74, 106, 138]; BUTTON_Y = 14;
 BUTTON_BODY_D = 19; BUTTON_BODY_L = 43;  // body plus plug, behind the plate (measure!)
@@ -111,6 +112,12 @@ VENT_X = [86, 176];  // below the carrier
 
 module box(x, y, z, dx, dy, dz) { translate([x, y, z]) cube([dx, dy, dz]); }
 
+// The plate's outline, grown by `grow` all round (corners stay concentric).
+module plate_outline(grow = 0) {
+  offset(r = grow) hull() for (x = [PLATE_R, PLATE_W - PLATE_R], y = [PLATE_R, PLATE_H - PLATE_R])
+    translate([x, y]) circle(r = PLATE_R);
+}
+
 // A hole along +Y (through the bottom wall), centred on x/z.
 module y_hole(x, y0, y1, z, d) {
   translate([x, y0, z]) rotate([-90, 0, 0]) cylinder(d = d, h = y1 - y0);
@@ -119,8 +126,9 @@ module y_hole(x, y0, y1, z, d) {
 module shell_body() {
   difference() {
     box(-O, -O, 0, OUTER_W, OUTER_H, DEPTH);
-    // Hollow from the front, leaving the back wall; the plate sits in the opening.
-    box(-REBATE_GAP, -REBATE_GAP, -E, PLATE_W + 2 * REBATE_GAP, PLATE_H + 2 * REBATE_GAP, Z_BACK + E);
+    // Hollow from the front, leaving the back wall; the plate sits in the opening, whose
+    // corners follow the plate's rounded ones with the same gap.
+    translate([0, 0, -E]) linear_extrude(Z_BACK + E) plate_outline(REBATE_GAP);
   }
   // Plate bosses, joined to the corner walls (not to the back wall).
   for (p = PLATE_HOLES) {
