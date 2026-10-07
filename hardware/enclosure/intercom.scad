@@ -71,8 +71,10 @@ Z_P4 = Z_CARRIER - SOCKET_H - PCB_T;     // the P4's component side
 CARRIER_PARTS_H = 16;  // JST-XH with its plug; C5 is 11.5
 // P4 STEP-model coordinates (x across 0..21, y along 0..78, RJ45 at y=0) -> box X/Y.
 function p4_xy(mx, my) = [92 + my, 73 - mx];
-MIC_XY = p4_xy(4.0, 73.25);  // MIC1, on the P4's component side; top-port (hole in its lid,
-                             // checked on the board), so it hears towards the plate
+// MIC1 is on the P4's component side (package 2.6 x 3.4 mm, centre at 4.0 / 73.25). It is
+// top-port: the hole is in its lid, near the end towards the USB-C (checked on the board;
+// position estimated ~0.8 mm from that end). So it hears towards the plate.
+MIC_XY = p4_xy(4.0, 74.2);  // the lid's sound hole: where the mic tube points
 RJ45_H = 13.3;
 POE_H = 13;          // PoE module (B) on the 6-pin header: socket ~9 mm, then its PCB and parts
 POE_Y = [20, 52];    // along the P4
