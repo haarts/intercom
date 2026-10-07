@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 from . import opus
-from .control import CAP_CAPTURE, CAP_PLAYBACK, Target
+from .control import CAP_ANNOUNCER, CAP_CAPTURE, CAP_PLAYBACK, Target
 from .jitter import Mixer
 from .keys import NetworkKey, generate_key_string
 from .node import PORT, Node, NodeConfig, parse_sender_id
@@ -243,7 +243,8 @@ async def cmd_record(args) -> None:
 async def cmd_send(args) -> None:
     from .media import pcm_from_ffmpeg, send_pcm
 
-    node = make_node(args, caps=CAP_CAPTURE)
+    # An announcement: boxes with buttons only play partners and announcers.
+    node = make_node(args, caps=CAP_CAPTURE | CAP_ANNOUNCER)
     await node.start()
     await asyncio.sleep(args.wait)  # let discovery and verification finish
     targets = node.peers.recipients(args.to)

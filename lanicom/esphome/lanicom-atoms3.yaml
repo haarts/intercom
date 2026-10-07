@@ -4,15 +4,15 @@
 # (encoder 31.6 KB, decoders 18.4 KB each, a 60 KB scratch area) don't fit in 512 KB of
 # on-chip RAM. Pairing worked; receiving didn't crash but played nothing; talking crashed in
 # the encoder every time. Use a board with PSRAM (AtomS3R, XIAO ESP32S3, the P4) instead.
-# The pins, the base's I/O expander and the 32-bit-slot / no-MCLK codec setup below are
-# still right for the Atomic Audio-3.5 Base.
+# The pins, the base's I/O expander and the codec setup below are right for the base
+# (proven on a XIAO ESP32S3: lanicom-xiao.yaml).
 #
 # The top button is the box's one button: hold it 5 s to pair it with a button on another box
 # (docs/buttons.md), then hold it to talk to that partner. The RGB LED is its ring.
 #
 # Base: ES8311 codec, analog MEMS mic (keep the base's mic switch on ON), NS4150B amp, enabled
-# through a PI4IOE5V6408 expander. The base has no MCLK line, and the ES8311 only runs 16 kHz
-# from the bit clock with 32-bit slots, so the I2S bus runs 32-bit slots both ways.
+# through a PI4IOE5V6408 expander. The base has no MCLK line; the codec runs from the bit clock,
+# which needs M5Stack's es8311 fork (ESPHome's own one only hisses).
 #
 # First: secrets.yaml needs wifi_ssid and wifi_password next to the other secrets.
 # First flash over USB-C:   esphome run lanicom-atoms3.yaml
@@ -109,6 +109,10 @@ external_components:
   - source:
       type: local
       path: components
+  # ESPHome's own es8311 mis-sets the clock multiplier when the codec runs from the bit
+  # clock (no MCLK line): the speaker only hisses. M5Stack's fork gets it right.
+  - source: github://m5stack/esphome-yaml@cc708ddcc9dea7cfc746b408d2495ce281bbf2d2
+    components: [es8311]
 
 # The base sits on the Atom's bottom header: I2C on G38/G39, I2S on G5-G8.
 i2c:
@@ -127,7 +131,7 @@ i2s_audio:
 audio_dac:
   - platform: es8311
     id: es8311_dac
-    bits_per_sample: 32bit  # slot width: 16 kHz x 32 x 2 = the 1.024 MHz bit clock the ES8311 runs on
+    bits_per_sample: 16bit
     sample_rate: 16000
     use_mclk: false
     mic_gain: 0DB  # overridden at boot by "Mic Digital Gain"
@@ -139,7 +143,7 @@ microphone:
     i2s_din_pin: GPIO7
     adc_type: external
     sample_rate: 16000
-    bits_per_sample: 32bit  # lanicom keeps the top 16 bits
+    bits_per_sample: 16bit
     channel: left
     correct_dc_offset: true
 
@@ -151,7 +155,7 @@ speaker:
     dac_type: external
     audio_dac: es8311_dac
     sample_rate: 16000
-    bits_per_sample: 32bit  # slot width; lanicom's 16-bit stream goes out in 32-bit slots
+    bits_per_sample: 16bit
     channel: left
     buffer_duration: 60ms
     timeout: never

@@ -9,8 +9,9 @@
 #   4 SDA -> D4 (GPIO5)                2 SCL -> D5 (GPIO6)
 #   9 SCLK -> D0 (GPIO1)  5 LRCK -> D1 (GPIO2)  3 DSDIN -> D2 (GPIO3)  7 ASDOUT -> D3 (GPIO4)
 #
-# Base: ES8311 codec (no MCLK line: 16 kHz only with 32-bit slots), analog MEMS mic (keep the
-# base's mic switch on ON), NS4150B amp enabled through a PI4IOE5V6408 expander (0x43).
+# Base: ES8311 codec clocked from the bit clock (no MCLK line; needs M5Stack's es8311 fork),
+# analog MEMS mic (keep the base's mic switch on ON), NS4150B amp enabled through a
+# PI4IOE5V6408 expander (0x43).
 #
 # First flash over USB-C:   esphome run lanicom-xiao.yaml
 # Then set the network key on http://<device>.local/ (user admin).
@@ -105,6 +106,10 @@ external_components:
   - source:
       type: local
       path: components
+  # ESPHome's own es8311 mis-sets the clock multiplier when the codec runs from the bit
+  # clock (no MCLK line): the speaker only hisses. M5Stack's fork gets it right.
+  - source: github://m5stack/esphome-yaml@cc708ddcc9dea7cfc746b408d2495ce281bbf2d2
+    components: [es8311]
 
 i2c:
   sda: GPIO5  # D4
@@ -122,7 +127,7 @@ i2s_audio:
 audio_dac:
   - platform: es8311
     id: es8311_dac
-    bits_per_sample: 32bit  # slot width: 16 kHz x 32 x 2 = the 1.024 MHz bit clock the ES8311 runs on
+    bits_per_sample: 16bit
     sample_rate: 16000
     use_mclk: false
     mic_gain: 0DB  # overridden at boot by "Mic Digital Gain"
@@ -134,7 +139,7 @@ microphone:
     i2s_din_pin: GPIO4  # D3
     adc_type: external
     sample_rate: 16000
-    bits_per_sample: 32bit  # lanicom keeps the top 16 bits
+    bits_per_sample: 16bit
     channel: left
     correct_dc_offset: true
 
@@ -146,7 +151,7 @@ speaker:
     dac_type: external
     audio_dac: es8311_dac
     sample_rate: 16000
-    bits_per_sample: 32bit  # slot width; lanicom's 16-bit stream goes out in 32-bit slots
+    bits_per_sample: 16bit
     channel: left
     buffer_duration: 60ms
     timeout: never
