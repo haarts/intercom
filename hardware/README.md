@@ -85,7 +85,7 @@ drawing and KiCad's top view read. Every output is mirrored once into the right-
 that slicers use; without that, the print would be a mirror image of the box.
 
 `render.sh` writes to `enclosure/out/`:
-- `shell.stl`, `wall_plate.stl` and `mic_tube.stl`;
+- `shell`, `wall_plate` and `mic_tube`, each as `.stl` and `.3mf` (the plate is brass, so it's never in them);
 - preview PNGs: front, back, iso, inside, inside_iso and a section through the carrier;
 - a collision check between the shell, the plate, the electronics, the speaker, the buttons
   and the mic tube, with the electronics, speaker and buttons as blocks. It fails if any two

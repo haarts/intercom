@@ -10,8 +10,10 @@ OPTS=(--backend=manifold)
 mkdir -p out
 
 for part in shell wall_plate mic_tube; do
-  "$SCAD" "${OPTS[@]}" -q -D "part=\"$part\"" -o "out/$part.stl" intercom.scad
-  echo "out/$part.stl"
+  for ext in stl 3mf; do
+    "$SCAD" "${OPTS[@]}" -q -D "part=\"$part\"" -o "out/$part.$ext" intercom.scad
+    echo "out/$part.$ext"
+  done
 done
 
 # Previews. Camera: translate x,y,z, rotate x,y,z, distance (real frame: the front faces -Z).
