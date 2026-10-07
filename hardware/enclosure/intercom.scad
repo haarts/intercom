@@ -71,7 +71,8 @@ Z_P4 = Z_CARRIER - SOCKET_H - PCB_T;     // the P4's component side
 CARRIER_PARTS_H = 16;  // JST-XH with its plug; C5 is 11.5
 // P4 STEP-model coordinates (x across 0..21, y along 0..78, RJ45 at y=0) -> box X/Y.
 function p4_xy(mx, my) = [92 + my, 73 - mx];
-MIC_XY = p4_xy(4.0, 73.25);  // MIC1, on the P4's component side
+MIC_XY = p4_xy(4.0, 73.25);  // MIC1, on the P4's component side; top-port (hole in its lid,
+                             // checked on the board), so it hears towards the plate
 RJ45_H = 13.3;
 POE_H = 13;          // PoE module (B) on the 6-pin header: socket ~9 mm, then its PCB and parts
 POE_Y = [20, 52];    // along the P4

@@ -124,7 +124,9 @@ Print the shell with its back on the bed; the rebate and bosses need no supports
 
 ### To verify with the first print
 - **Mic:** it is on the P4, next to the USB-C, 29 mm behind the plate (`MIC_XY` in the script), and will sound muffled without help.
+  It is top-port (a hole in its lid, checked on the board), so it hears towards the plate.
   - `mic_tube.stl` runs from the plate to 3.6 mm in front of the mic, clear of the USB-C. Glue its flange behind the plate and close the last gap with a foam ring.
+  - Its 3 mm bore is centred on the mic package. If the lid's hole is off-centre, move `MIC_XY`.
   - Check that the tube ends behind a grille opening, not a web. If needed, drill a small hole.
 - **PoE module:** modelled as a 32 × 26 × 13 mm block. Check the real height and overhang.
 - **Cable:** the RJ45 plug and the cable's bend between the jack and the cable opening. A slim patch cable helps.
