@@ -216,6 +216,7 @@ class LanicomComponent : public Component {
     lc_button_link_t links[LC_MAX_BUTTONS];
   } links_{};
   ESPPreferenceObject links_pref_;
+  bool was_pairing_[LC_MAX_BUTTONS]{};  // for logging pairing mode
   float ring_idle_[LC_MAX_BUTTONS]{0.1f, 0.1f, 0.1f, 0.1f};
   float night_idle_{0.02f};
   int night_start_{22}, night_end_{7};

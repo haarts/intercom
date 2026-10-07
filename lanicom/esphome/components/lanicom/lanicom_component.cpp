@@ -231,6 +231,18 @@ void LanicomComponent::buttons_loop_() {
   size_t n = 0;
   {
     Lock lock(this->engine_mutex_);
+    for (size_t i = 0; i < this->button_sensors_.size(); i++) {
+      const lc_button_t *b = &this->buttons_.b[i];
+      if (b->pairing != this->was_pairing_[i]) {
+        this->was_pairing_[i] = b->pairing;
+        if (b->pairing && b->accept_peer)
+          ESP_LOGI(TAG, "Button %u: pairing mode, answering %08" PRIx32 "'s offer", (unsigned) i + 1, b->accept_peer);
+        else if (b->pairing)
+          ESP_LOGI(TAG, "Button %u: pairing mode, offering for 60 s", (unsigned) i + 1);
+        else if (!b->link.partner)
+          ESP_LOGI(TAG, "Button %u: pairing mode ended without a partner", (unsigned) i + 1);
+      }
+    }
     if (this->buttons_.links_changed) {
       this->buttons_.links_changed = false;
       for (size_t i = 0; i < LC_MAX_BUTTONS; i++)
@@ -247,7 +259,7 @@ void LanicomComponent::buttons_loop_() {
     this->links_pref_.save(&this->links_);
     global_preferences->sync();
     for (size_t i = 0; i < this->button_sensors_.size(); i++)
-      ESP_LOGI(TAG, "Button %u: %s", (unsigned) i + 1, this->partner_summary(i).c_str());
+      ESP_LOGI(TAG, "Button %u: linked to %s", (unsigned) i + 1, this->partner_summary(i).c_str());
   }
   if (!talk_changed)
     return;
