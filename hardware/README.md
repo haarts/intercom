@@ -27,6 +27,7 @@ up the right row, from the RJ45 end. Source: Waveshare's [ESP32-P4-ETH](https://
 | LED ring 3 | GPIO4 | 12 | J1.12 |
 | LED ring 4 | GPIO33 | 25 | J7.5 |
 | Spare | GPIO2, GPIO3 | 15, 14 | J1.15, J1.14 → J6 |
+| Off switch (`EN` = `3V3_EN`) | | 37 | J7.17 (bodge, see below) |
 | +5 V (VSYS) | | 39 | J7.19 |
 | GND | | 3, 8, 13, 18, 23, 28, 33, 38 | |
 
@@ -54,6 +55,31 @@ up the right row, from the RJ45 end. Source: Waveshare's [ESP32-P4-ETH](https://
 - Four M3 holes (H1–H4).
 
 ESPHome: buttons `INPUT_PULLUP`, `inverted: true`; LEDs as `ledc` outputs (dimming, pulsing).
+
+### Off switch (bodge on rev A)
+
+A toggle switch between J7.17 (P1 pin 37) and J7.18 (pin 38, GND) turns the box off. Closed = off.
+Both socket pins are free on rev A and sit next to each other, so it is two wires on the carrier and nothing on the P4.
+
+From Waveshare's [schematic](https://files.waveshare.com/wiki/ESP32-P4-ETH/ESP32-P4-ETH-datasheet.pdf):
+- **What pin 37 is:** `EN` on the header is `3V3_EN`, the enable of the MP1658 buck (U1) that makes `ESP_3V3` from 5 V.
+  It is pulled up to 5 V with 10 kΩ (R21). Pulling it low removes 3.3 V from the P4, so the switch is a real power-off,
+  not a reset or sleep, and firmware can't override it.
+- **Pin 30 is a different pin:** `RUN` is `ESP_EN` (the RESET button). Holding it low keeps the chip in reset with everything still powered.
+- **What stays powered while off:**
+  - the PoE module;
+  - the analog 3.3 V LDO (U8, always enabled) for the codec and mic;
+  - the power LED.
+- **What goes dark by itself:**
+  - the speaker amp (NS4150B, CTRL = GPIO53 with a 10 kΩ pull-down);
+  - the LED rings (base pull-downs).
+- **Wiring:** keep the wires inside the box and twisted. A 100 nF cap across the switch is cheap insurance against noise on EN.
+- **Switching back on** is a cold boot. Partners see the box as offline after 30 s, because no `bye` is sent.
+- **Factory reset still works:** ESPHome counts power-on resets, so flicking the switch 5 times within 10 s
+  does a factory reset, like 5 power cycles. That is intended: the switch is a handy reset gesture.
+- **To check on the first board:**
+  - with the switch off, `ESP_3V3` (pin 36) should read ~0 V. If it floats at 1–2 V, something is back-powering the P4 through its IO pins;
+  - measure the power draw while off.
 
 ## Front plate
 
