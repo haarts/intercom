@@ -148,7 +148,7 @@ These override the per-button states.
 | Announcement | All rings breathe together | Home Assistant is talking to this device |
 | Reset count | One flash per power cycle | Counting towards a factory reset |
 | Identify | All rings flash for 10 s | "Identify" pressed on the web page |
-| No network | Short blink every 2 s (on 4 buttons: a running light) | No Ethernet link or no IP |
+| No network | Short blink every 2 s, all rings together | No Ethernet link or no IP |
 | Not provisioned | Triple blink, repeating | No network key set |
 
 The original plan had four states: idle (dim), talking (on), receiving (pulse) and not
