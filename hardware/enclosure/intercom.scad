@@ -68,8 +68,10 @@ STANDOFF_D = 7;
 function carrier_xy(p) = [CARRIER_X0 + (p[0] - 100), CARRIER_Y0 + (148 - p[1])];
 CARRIER_HOLES = [for (p = [[103, 103.5], [187.2, 121], [121.85, 144.3], [166.25, 144.3]]) carrier_xy(p)];
 Z_CARRIER = Z_BACK - STANDOFF_H - PCB_T;  // the carrier's component side
-SOCKET_H = 8.5;                          // 1x20 female sockets
-Z_P4 = Z_CARRIER - SOCKET_H - PCB_T;     // the P4's component side
+// Carrier top -> P4 underside, measured: the 8.5 mm sockets plus the P4 header's spacer.
+// Check: carrier back -> plate front with the plate resting on the RJ45 measured 32 mm.
+P4_GAP = 12;
+Z_P4 = Z_CARRIER - P4_GAP - PCB_T;       // the P4's component side
 CARRIER_PARTS_H = 16;  // JST-XH with its plug; C5 is 11.5
 // P4 STEP-model coordinates (x across 0..21, y along 0..78, RJ45 at y=0) -> box X/Y.
 function p4_xy(mx, my) = [92 + my, 73 - mx];
@@ -260,7 +262,7 @@ module carrier_stack() {
   box(c[0], c[1], Z_CARRIER, CARRIER_L, CARRIER_W, PCB_T);                         // carrier
   box(c[0], c[1], Z_CARRIER - CARRIER_PARTS_H, CARRIER_L, 22, CARRIER_PARTS_H);    // JSTs, C5, ...
   s = p4_xy(21, 0);
-  box(s[0], s[1], Z_CARRIER - SOCKET_H, 78, 21, SOCKET_H);                         // sockets
+  box(s[0], s[1], Z_CARRIER - P4_GAP, 78, 21, P4_GAP);                             // sockets + header
   box(s[0], s[1], Z_P4, 78, 21, PCB_T);                                            // P4
   box(s[0], s[1], Z_P4 - 4.1, 70, 21, 4.1);         // top-side parts; the FPC connector is 4.1
   box(s[0] + 70, s[1], Z_P4 - 3.2, 9.4, 21, 3.2);   // USB end: mic, USB-C (3.2)
