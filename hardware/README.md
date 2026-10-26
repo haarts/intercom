@@ -46,7 +46,8 @@ up the right row, from the RJ45 end. Source: Waveshare's [ESP32-P4-ETH](https://
 - **Switch input:** 1 kΩ in series to the GPIO, with 100 nF to GND. The pull-up is the ESP32's own; a pressed button reads low.
 - **LED ring:**
   - switched low-side by a BC547, with a 1 kΩ base resistor and a 10 kΩ base pull-down that keeps it off during boot;
-  - a series resistor (R13–R16) is fitted with 0 Ω until a ring's current at 5 V has been measured.
+  - a series resistor (R13–R16) is fitted with 0 Ω (a wire link). A ring draws about 10 mA at 5 V
+    (measured on a lab supply), so the rings have their own resistor and need no other.
 
 **Also on the board:**
 - 10 µF on 5 V (C5).
