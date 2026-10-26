@@ -13,7 +13,8 @@
 // Parts:
 // - shell: open at the front; the brass plate sits in a rebate, flush with the front.
 //   Inside: plate bosses (M3 heat-set inserts), carrier standoffs (M3 inserts), a closed
-//   chamber behind the speaker, bottom vents, a cable opening in the back.
+//   chamber behind the speaker, bottom vents, the off switch's cut-out in the bottom, a cable
+//   opening in the back.
 // - wall_plate: screws onto the in-wall box (60 mm screw spacing, horizontal or vertical).
 //   The shell hooks onto its top lugs, slides down SLIDE mm, and is fixed with two M3
 //   screws from below into the wall plate's tabs. The model shows the final position.
@@ -109,6 +110,15 @@ TAB_Z = Z_BACK - 5;             // height of the fixing screws
 VENT_L = 30; VENT_W = 2.5; VENT_PITCH = 6;
 VENT_X = [86, 176];  // below the carrier
 
+// --- off switch: round snap-in rocker in the bottom face, below J7.17/J7.18 ---
+// Closed = off (it pulls 3V3_EN low; see ../README.md). Away from the corner boss and
+// button 4; the vents beside it start behind it.
+SWITCH_X = 160; SWITCH_Z = 14;  // centre of the hole
+SWITCH_HOLE_D = 15;             // panel cut-out, from the seller; the bezel is 16
+SWITCH_BEZEL_D = 16; SWITCH_BEZEL_H = 6;  // outside the box, with the rocker (estimate)
+SWITCH_BODY_L = 20;             // body plus tabs inside, from the panel (measure!)
+SWITCH_PANEL_T = WALL;          // what the snap clips grip; less than WALL pockets the inside
+
 // ---------------------------------------------------------------------------
 
 module box(x, y, z, dx, dy, dz) { translate([x, y, z]) cube([dx, dy, dz]); }
@@ -181,10 +191,17 @@ module shell() {
       // Fixing screw from below, up through the bottom wall into the tab.
       y_hole(tx, -O - 1, 0.5, TAB_Z, M3_CLEAR_D);
     }
-    // Vents in the bottom under the carrier, clear of the fixing screws.
+    // Off switch: the cut-out, and a pocket inside if the clips need a thinner wall.
+    y_hole(SWITCH_X, -O - 1, 0.5, SWITCH_Z, SWITCH_HOLE_D);
+    if (SWITCH_PANEL_T < WALL) y_hole(SWITCH_X, -O + SWITCH_PANEL_T, 0.5, SWITCH_Z, SWITCH_HOLE_D + 6);
+    // Vents in the bottom under the carrier, clear of the fixing screws; beside the switch
+    // they start behind its hole.
     for (vx = [VENT_X[0] : VENT_PITCH : VENT_X[1] - VENT_W])
-      if (min([for (tx = TAB_X) abs(vx + VENT_W / 2 - tx)]) > 5)
-        box(vx, -O - 1, Z_BACK - VENT_L - 2, VENT_W, O + 2, VENT_L);
+      if (min([for (tx = TAB_X) abs(vx + VENT_W / 2 - tx)]) > 5) {
+        z0 = Z_BACK - VENT_L - 2;
+        z1 = abs(vx + VENT_W / 2 - SWITCH_X) < SWITCH_HOLE_D / 2 + 2 ? max(z0, SWITCH_Z + SWITCH_HOLE_D / 2 + 2) : z0;
+        box(vx, -O - 1, z1, VENT_W, O + 2, Z_BACK - 2 - z1);
+      }
   }
 }
 
@@ -262,6 +279,11 @@ module buttons() {
   for (x = BUTTONS_X) translate([x, BUTTON_Y, PLATE_T]) cylinder(d = BUTTON_BODY_D, h = BUTTON_BODY_L);
 }
 
+module off_switch() {
+  y_hole(SWITCH_X, -O + SWITCH_PANEL_T, -O + SWITCH_PANEL_T + SWITCH_BODY_L, SWITCH_Z, SWITCH_HOLE_D);
+  y_hole(SWITCH_X, -O - SWITCH_BEZEL_H, -O, SWITCH_Z, SWITCH_BEZEL_D);
+}
+
 module item(name) {
   if (name == "shell") shell();
   else if (name == "wall_plate") wall_plate();
@@ -269,6 +291,7 @@ module item(name) {
   else if (name == "electronics") carrier_stack();
   else if (name == "speaker") speaker();
   else if (name == "buttons") buttons();
+  else if (name == "switch") off_switch();
   else if (name == "plate") plate();
   // The mic tube's bore where it meets the plate: render.sh measures how much brass covers it.
   else if (name == "mic_bore") translate([MIC_GRILLE_XY[0], MIC_GRILLE_XY[1], -1]) cylinder(r = 1.5, h = PLATE_T + 2);
@@ -287,6 +310,7 @@ module assembly() {
   color("steelblue", 0.7) carrier_stack();
   color("steelblue", 0.7) speaker();
   color("steelblue", 0.7) buttons();
+  color("steelblue", 0.7) off_switch();
 }
 
 // A 10 mm slice through the carrier, P4 and PoE module, turned so that a camera looking

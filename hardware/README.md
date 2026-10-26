@@ -78,6 +78,8 @@ From Waveshare's [schematic](https://files.waveshare.com/wiki/ESP32-P4-ETH/ESP32
 - **What goes dark by itself:**
   - the speaker amp (NS4150B, CTRL = GPIO53 with a 10 kΩ pull-down);
   - the LED rings (base pull-downs).
+- **In the enclosure:** a round snap-in rocker in a Ø15 cut-out in the bottom face, below J7.17/J7.18
+  (`SWITCH_*` in `enclosure/intercom.scad`). Closed = off, so an I/O-marked rocker reads backwards.
 - **Wiring:** keep the wires inside the box and twisted. A 100 nF cap across the switch is cheap insurance against noise on EN.
 - **Switching back on** is a cold boot. Partners see the box as offline after 30 s, because no `bye` is sent.
 - **Factory reset still works:** ESPHome counts power-on resets, so flicking the switch 5 times within 10 s

@@ -34,6 +34,7 @@ pairs=(
   "shell electronics" "shell speaker" "shell buttons" "shell mic_tube" "shell wall_plate"
   "electronics speaker" "electronics buttons" "electronics mic_tube" "electronics wall_plate"
   "speaker buttons" "speaker mic_tube" "buttons mic_tube" "plate shell" "plate electronics"
+  "shell switch" "electronics switch" "buttons switch" "wall_plate switch"
 )
 # Volume shared by two items (divergence theorem over the triangles of their intersection).
 # Faces that only touch (the carrier on its standoffs, the plate on its bosses) give zero.
